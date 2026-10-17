@@ -576,28 +576,6 @@ export function FooterAccount(props) {
   return h('span', { className: 'bt-foot-account' }, h(AccountLauncher, { ...props, seat: false }))
 }
 
-// The only entry registered in every mode: in Agent mode the whole Bot surface is
-// withdrawn, and this button in the shell's own footer is the way back.
-export function BotReturn({ wide, useSurface, actions }) {
-  const mode = useSurface(value => value.mode)
-  if (mode !== 'agent') return null
-  return h('button', { type: 'button', className: 'bt-return', 'aria-label': t('DS Bot'), title: t('DS Bot'), onClick: () => actions.setSurface('bot') },
-    h(BotMark, { look: MAIN_LOOK, size: 20 }),
-    wide ? h('span', { className: 'bt-return-name' }, t('DS Bot')) : null)
-}
-
-// Agent mode has none of the shell-group styles, so the return button carries its own.
-export const RETURN_CSS = `
-.bt-return{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:0 14px;border:0;border-radius:999px;background:none;color:inherit;font:inherit;font-size:14px;line-height:20px;cursor:pointer;transition:background-color .12s ease}
-.bt-return:hover{background:rgba(127,127,127,.14)}
-.bt-return:active{transform:scale(.96)}
-.bt-return .bt-mark{display:inline-flex;flex:none;line-height:0}
-.bt-return .bt-mark svg{width:100%;height:100%;overflow:visible}
-/* Shell styles carry --bt-ink-deepseek and Agent mode withdraws them; pin it here. */
-.bt-return .bt-mark{--bt-ink-deepseek:#4D6BFE}
-.bt-return-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-`
-
 export function BrandMark({ size = 24 }) {
   return h('span', { className: 'bt-brand-whale' }, h(BotMark, { look: MAIN_LOOK, size }))
 }

@@ -7,7 +7,7 @@ import { themeCss, shellTokens, registry, registerShape, registerTheme, allTheme
 import { MENTION_ORIGIN, currentPart } from './text.js'
 import { SHELL_CSS, CONVERSATION_CSS, installStyles, installCompiledStyles } from './styles.js'
 import { lookOf } from './mark.js'
-import { TeamSidebar, ConnectPlugins, YouAvatar, AccountLauncher, FooterAccount, BrandMark, BrandName, BotReturn, SIDEBAR_CSS, RETURN_CSS, holdShellShortcuts, openHarnessOnboarding, openHarnessSettings } from './sidebar.js'
+import { TeamSidebar, ConnectPlugins, YouAvatar, AccountLauncher, FooterAccount, BrandMark, BrandName, SIDEBAR_CSS, holdShellShortcuts, openHarnessOnboarding, openHarnessSettings } from './sidebar.js'
 import { HeaderPill } from './header.js'
 import { ComposerPlus, ComposerVoice, menuIcons } from './composer.js'
 import { CHATS_SOURCE, atSources } from './at-menu.js'
@@ -35,6 +35,7 @@ import { ABOUT_CSS } from './about.js'
 import { MEMBER_CSS, MemberDock } from './member-status.js'
 import { USER_MESSAGE_CSS, UserMessageCell, canDrawUserMessages } from './user-message.js'
 import { noticeApprovals } from './approval-notices.js'
+import { BotEntry, BotPanelIcon } from './bot-entry.js'
 
 export const inject = ['sessions', 'uiWorkspace', 'uiConversation', 'slots', 'theme', 'layout']
 
@@ -689,12 +690,10 @@ export function apply(ctx) {
     () => shadow('conversation.input.dock', { id: 'bot-question', order: -100, inject: face }, QuestionDock),
     () => shadow('conversation.input.dock', { id: 'bot-secret', order: -90, inject: face }, SecretDock),
   ]
-  // The return button belongs to neither group: it renders only in Agent mode.
-  ctx.effect(() => {
-    const style = installStyles(RETURN_CSS, 'return')
-    return () => style.remove()
-  }, 'ds-bot: return styles')
-  shadow('sidebar.footer.action', { id: 'bot-return', order: -300, inject: face }, BotReturn)
+  // Keep the entry outside both surface groups so Agent mode can return to Bots.
+  // The built-in Plugins and Scheduled tasks rows have orders 0 and 10.
+  shadow('main', { key: 'ds-bot', inject: () => ({ actions }) }, BotEntry)
+  shadow('sidebar.panellist', { id: 'ds-bot', order: 20, label: () => t('DS Bot') }, BotPanelIcon)
 
   // The main view decides `plain`: a DSH Agent Session keeps the Bot shell but
   // withdraws the conversation replacements, so the native dsh page shows. A jump

@@ -1222,8 +1222,8 @@ function bodyOf(def, paint, flat = false) {
     return "";
   }
 }
-var eyeMarkup = ([cx, cy, w, h36, tilt]) => `<g transform="translate(${cx} ${cy}) rotate(${tilt})"><rect class="bt-eye" x="${-w / 2}" y="${-h36 / 2}" width="${w}" height="${h36}" rx="${w / 2}"/></g>`;
-var happyEyeMarkup = ([cx, cy, w, h36, tilt]) => `<g transform="translate(${cx} ${cy}) rotate(${tilt})"><path class="bt-eye-happy" opacity="0" d="M${-w * 0.62} ${h36 * 0.14}Q0 ${-h36 * 0.42} ${w * 0.62} ${h36 * 0.14}" fill="none" stroke="#000" stroke-width="${w * 0.5}" stroke-linecap="round"/></g>`;
+var eyeMarkup = ([cx, cy, w, h37, tilt]) => `<g transform="translate(${cx} ${cy}) rotate(${tilt})"><rect class="bt-eye" x="${-w / 2}" y="${-h37 / 2}" width="${w}" height="${h37}" rx="${w / 2}"/></g>`;
+var happyEyeMarkup = ([cx, cy, w, h37, tilt]) => `<g transform="translate(${cx} ${cy}) rotate(${tilt})"><path class="bt-eye-happy" opacity="0" d="M${-w * 0.62} ${h37 * 0.14}Q0 ${-h37 * 0.42} ${w * 0.62} ${h37 * 0.14}" fill="none" stroke="#000" stroke-width="${w * 0.5}" stroke-linecap="round"/></g>`;
 var maskBox = (size) => `maskUnits="userSpaceOnUse" x="${-size}" y="${-size}" width="${size * 3}" height="${size * 3}"`;
 var holes = (def, eyes) => `<rect x="${-def.size}" y="${-def.size}" width="${def.size * 3}" height="${def.size * 3}" fill="#fff"/>${eyes}`;
 var MASK_ID = "%MASK%";
@@ -1863,12 +1863,12 @@ function liveSprings(apply2) {
     const dt = Math.min(0.5, Math.max(1e-3, (now - last) / 1e3));
     last = now;
     const steps = Math.ceil(dt * 240);
-    const h36 = dt / steps;
+    const h37 = dt / steps;
     let moving = false;
     for (const value of values.values()) {
       for (let index = 0; index < steps; index += 1) {
-        value.v += (-value.k * (value.x - value.to) - value.c * value.v) * h36;
-        value.x += value.v * h36;
+        value.v += (-value.k * (value.x - value.to) - value.c * value.v) * h37;
+        value.x += value.v * h37;
       }
       if (Math.abs(value.x - value.to) < 0.05 && Math.abs(value.v) < 1) {
         value.x = value.to;
@@ -5817,26 +5817,6 @@ function FooterAccount(props) {
   if (seated) return null;
   return (0, import_react9.createElement)("span", { className: "bt-foot-account" }, (0, import_react9.createElement)(AccountLauncher, { ...props, seat: false }));
 }
-function BotReturn({ wide, useSurface, actions }) {
-  const mode = useSurface((value) => value.mode);
-  if (mode !== "agent") return null;
-  return (0, import_react9.createElement)(
-    "button",
-    { type: "button", className: "bt-return", "aria-label": t("DS Bot"), title: t("DS Bot"), onClick: () => actions.setSurface("bot") },
-    (0, import_react9.createElement)(BotMark, { look: MAIN_LOOK, size: 20 }),
-    wide ? (0, import_react9.createElement)("span", { className: "bt-return-name" }, t("DS Bot")) : null
-  );
-}
-var RETURN_CSS = `
-.bt-return{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:0 14px;border:0;border-radius:999px;background:none;color:inherit;font:inherit;font-size:14px;line-height:20px;cursor:pointer;transition:background-color .12s ease}
-.bt-return:hover{background:rgba(127,127,127,.14)}
-.bt-return:active{transform:scale(.96)}
-.bt-return .bt-mark{display:inline-flex;flex:none;line-height:0}
-.bt-return .bt-mark svg{width:100%;height:100%;overflow:visible}
-/* Shell styles carry --bt-ink-deepseek and Agent mode withdraws them; pin it here. */
-.bt-return .bt-mark{--bt-ink-deepseek:#4D6BFE}
-.bt-return-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-`;
 function BrandMark({ size = 24 }) {
   return (0, import_react9.createElement)("span", { className: "bt-brand-whale" }, (0, import_react9.createElement)(BotMark, { look: MAIN_LOOK, size }));
 }
@@ -13783,6 +13763,20 @@ function noticeApprovals({ work, roster, shownSession, openSession, since: since
   return work.subscribe(notify);
 }
 
+// src/client/bot-entry.js
+var import_react37 = require("react");
+var import_dsh_client_ui_primitives2 = require("@deepseek-ai/dsh-client-ui-primitives");
+function BotPanelIcon({ size }) {
+  return (0, import_react37.createElement)(import_dsh_client_ui_primitives2.IconAgentPresetOutlineRegular, { size });
+}
+function BotEntry({ actions }) {
+  (0, import_react37.useEffect)(() => {
+    actions.selectPanel(null);
+    actions.setSurface("bot");
+  }, [actions]);
+  return null;
+}
+
 // src/client/index.js
 var inject = ["sessions", "uiWorkspace", "uiConversation", "slots", "theme", "layout"];
 function apply(ctx) {
@@ -14432,11 +14426,8 @@ function apply(ctx) {
     () => shadow("conversation.input.dock", { id: "bot-question", order: -100, inject: face }, QuestionDock),
     () => shadow("conversation.input.dock", { id: "bot-secret", order: -90, inject: face }, SecretDock)
   ];
-  ctx.effect(() => {
-    const style = installStyles(RETURN_CSS, "return");
-    return () => style.remove();
-  }, "ds-bot: return styles");
-  shadow("sidebar.footer.action", { id: "bot-return", order: -300, inject: face }, BotReturn);
+  shadow("main", { key: "ds-bot", inject: () => ({ actions }) }, BotEntry);
+  shadow("sidebar.panellist", { id: "ds-bot", order: 20, label: () => t("DS Bot") }, BotPanelIcon);
   ctx.effect(() => {
     let previous;
     const sync = () => {
