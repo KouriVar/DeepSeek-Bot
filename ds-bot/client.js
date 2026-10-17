@@ -42,6 +42,7 @@ module.exports = __toCommonJS(index_exports);
 // src/client/i18n.js
 var NAMESPACE = "ds-bot";
 var ZH = {
+  Plugins: "插件",
   // Shared
   "Main Bot": "主 Bot",
   Working: "工作中",
@@ -987,7 +988,8 @@ function installLocale(locale) {
   };
 }
 function t(key, params) {
-  return bound ? bound(key, params) : fill(key, params);
+  const copy2 = bound ? bound(key, params) : fill(key, params);
+  return key.includes("DS Bot") ? copy2.replaceAll("DS Bot", "Halfsignal") : copy2;
 }
 function hostText(message) {
   if (!language().startsWith("zh")) return message;
@@ -1542,6 +1544,8 @@ var darkAccent = (accent) => {
   const ink = ACCENT_INKS.find((id) => INKS[id][0] === accent);
   return ink === void 0 ? accent : INKS[ink][1];
 };
+var nativeAccentCss = (accent) => accent ? `html body{--bt-accent:${accent};--bt-accent-ink:${accentInk(accent)}}
+html body[data-ds-dark-theme]{--bt-accent:${darkAccent(accent)};--bt-accent-ink:${accentInk(darkAccent(accent))}}` : "";
 var themeCss = (theme, accent) => `html body{${declarations(themeVars(theme.light, false, accent ?? theme.light.accent))}}
 html body[data-ds-dark-theme]{${declarations(themeVars(theme.dark, true, darkAccent(accent) ?? theme.dark.accent))}}
 ${theme.css ?? ""}`;
@@ -2855,18 +2859,8 @@ var CONVERSATION_CSS = `
 :is([data-step-process],[data-turn-process-hidden])[hidden]{content-visibility:visible!important}
 [class*="_flowItem"]:has(> [data-slot="conversation.chat.node"]:empty){display:none!important}
 [class*="_header"]:has(.bt-head){border-bottom-color:transparent!important;box-shadow:none!important}
-/* The transcript runs under a floating header pill. */
-header[class*="_header"]:has(.bt-head){position:absolute!important;top:0;left:0;right:0;z-index:8;display:flex!important;padding:10px 0 0!important;background:transparent!important;pointer-events:none;justify-content:center}
-header[class*="_header"]:has(.bt-head)::before{content:"";position:absolute;inset:0 0 auto;height:60px;background:linear-gradient(to bottom,var(--bt-main),color-mix(in srgb,var(--bt-main) 0%,transparent));pointer-events:none;z-index:-1}
-header[class*="_header"]:has(.bt-head)>[class*="_headerLeading"]{position:absolute;left:12px;top:10px;pointer-events:auto}
-header[class*="_header"] .bt-head{flex:1 1 auto;width:100%}
-[class*="_body"]:has(> [class*="_scrollBody"]){--dsh-chat-content-width:min(960px,100%)}
-/* The shell writes the column's width on the conversation root at every resize, only to
-   derive the content width that the rule above replaces. Inherited, each write restyled
-   the whole conversation: once a frame while the details panel glides, most in a long
-   group chat. Kept on the root alone, a write restyles one element. */
-@property --dsh-conversation-column-width{syntax:"*";inherits:false}
-@property --dsh-chat-user-width{syntax:"*";inherits:false}
+/* Keep the shell's normal header and responsive content column. */
+header[class*="_header"] .bt-head{flex:1 1 auto;min-width:0}
 /* DSH's turn tail keeps what plugins put in it (delivered files, the Bot's separators),
    without its copy and branch row; a tail with nothing in it takes no room. */
 [data-turn-tail]>:not([data-slot="conversation.chat.turnTail"]){display:none!important}
@@ -2877,9 +2871,7 @@ header[class*="_header"] .bt-head{flex:1 1 auto;width:100%}
 [data-content-phase=hero] [class*="_scrollBody"]{justify-content:flex-end!important}
 [data-content-phase=hero] [class*="_composerHero"]{align-self:stretch!important;width:auto!important;padding-bottom:0!important}
 [data-content-phase=hero] [class*="_composerHero"]>[class$="_root"],[data-content-phase=hero] [class*="_heroWorkspaceRow"]{display:none!important}
-[data-content-phase=hero] [class*="_composerHero"] [class*="_input"]{min-height:0!important}
 /* The right sides give back the scrollbar gutter so both edges sit 16px from the column. */
-[class*="_scroll"]:has(> [class*="_column"]){padding:60px 11px 16px 16px!important}
 /* The shell's running status only hosts the activity row (.bt-typing). */
 [data-chat-running]{display:block!important;width:100%;min-height:0!important;margin:0!important;padding:0!important}
 [data-chat-running]>span:not([role=status]){display:none!important}
@@ -2916,18 +2908,6 @@ header[class*="_header"] .bt-head{flex:1 1 auto;width:100%}
 }
 @keyframes bt-fade-in{from{opacity:0}to{opacity:1}}
 @keyframes bt-fade-out{from{opacity:1}to{opacity:0}}
-[data-composer-card]{display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;align-items:center!important;gap:0!important;min-height:44px!important;border-radius:22px!important;padding:7.5px!important;box-sizing:border-box;background:var(--bt-main)!important;border:.5px solid var(--bt-line-2)!important;box-shadow:0 2px 8px -1px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.03),0 0 0 1px rgba(228,228,228,.04)!important;transition:border-color .15s ease,background-color .15s ease,${spring(SPRING_SHAPE, "border-radius")}!important}
-[data-composer-card]:hover,[data-composer-card]:focus-within{border-color:color-mix(in srgb,var(--bt-ink) 30%,transparent)!important}
-[data-composer-card]:has(> [data-slot="conversation.input.attachments"] *),[data-composer-card]:has([data-composer-input] br + *),[data-composer-card]:has([data-composer-input] > :nth-child(2)){border-radius:18px!important}
-[class*="_root"]:has(> [data-composer-card]){padding:0 11px 13px 16px!important}
-[class*="_root"]:has(> [data-composer-card])>[data-composer-card]{max-width:min(992px,100%)!important}
-[data-composer-card]>[class*="_row"]{display:contents!important}
-[data-composer-card] [class*="_tools"]{order:1!important;flex:none!important;align-self:flex-end!important;margin:0!important}
-[data-composer-card]>[data-input-scroll]{order:2!important;flex:1 1 0!important;min-width:0!important;padding:0 8px!important;margin:0!important}
-[data-composer-card] [class*="_trailing"]{order:3!important;flex:none!important;align-self:flex-end!important;margin:0!important}
-[data-composer-card]>[data-slot="conversation.input.attachments"]{order:0!important;flex-basis:100%!important}
-[data-composer-card] [data-composer-input]{min-height:24px!important;padding:2px 0!important}
-[data-composer-card] [data-composer-placeholder]{left:0!important;top:2px!important}
 [data-composer-placeholder]{font-size:0!important;line-height:0!important}
 /* The name sits on ::before so that ::after stays free for other composer skins. */
 [data-composer-placeholder]::before{content:var(--bt-placeholder,"Message")!important;display:block!important;font-size:14px!important;line-height:24px!important;color:color-mix(in srgb,var(--bt-ink) 36%,transparent)!important}
@@ -5182,24 +5162,6 @@ function BotRow({ bot, roster, actions, useSessions, useSessionStatus, useSessio
   };
   const pinned = bot.pinned === true && !tile;
   const label = [bot.name, main ? t("Main Bot") : "", pinned ? t("Pinned") : "", running || away ? t("Working") : "", waitsFor, approval ? t("Waiting for your approval") : alert ? t("Waiting for your answer") : "", unread ? t("Unread activity") : ""].filter(Boolean).join(", ");
-  if (tile && wide) {
-    return (0, import_react9.createElement)("div", { className: "bt-tile-wrap" }, (0, import_react9.createElement)(
-      "button",
-      {
-        type: "button",
-        className: "bt-tile",
-        "aria-label": label,
-        "aria-current": active ? "page" : void 0,
-        "data-bot-id": id,
-        title: preview || bot.name,
-        onClick: () => actions.openSession(id),
-        onContextMenu
-      },
-      (0, import_react9.createElement)(BotAvatar, { bot, size: 60, state, main: true }),
-      (0, import_react9.createElement)("span", { className: "bt-tile-name" }, bot.name),
-      bot.role ? (0, import_react9.createElement)("span", { className: "bt-chip" }, bot.role) : null
-    ));
-  }
   return (0, import_react9.createElement)(
     "button",
     {
@@ -5208,17 +5170,17 @@ function BotRow({ bot, roster, actions, useSessions, useSessionStatus, useSessio
       "aria-label": label,
       "aria-current": active ? "page" : void 0,
       "data-bot-id": id,
-      title: wide ? void 0 : bot.name,
+      title: wide ? preview || bot.role || bot.name : bot.name,
       onClick: () => actions.openSession(id),
       onContextMenu
     },
-    (0, import_react9.createElement)(BotAvatar, { bot, size: 36, state, main }),
+    (0, import_react9.createElement)("span", { className: "bt-nav-icon", "data-state": running || away ? "working" : alert ? "alert" : "idle", "aria-hidden": true }, (0, import_react9.createElement)(PeopleIcon)),
     pinned && !wide ? (0, import_react9.createElement)(PinMark) : null,
     wide ? (0, import_react9.createElement)(
       "span",
       { className: "bt-row-body" },
-      (0, import_react9.createElement)("span", { className: "bt-row-name" }, (0, import_react9.createElement)("span", { className: "bt-row-title" }, bot.name), pinned ? (0, import_react9.createElement)(PinMark) : null),
-      awayLine ? (0, import_react9.createElement)("span", { className: "bt-row-preview" }, awayLine) : waitsFor ? (0, import_react9.createElement)("span", { className: "bt-row-preview" }, waitsFor) : preview ? (0, import_react9.createElement)("span", { className: "bt-row-preview" }, preview) : null
+      (0, import_react9.createElement)("span", { className: "bt-row-name" }, (0, import_react9.createElement)("span", { className: "bt-row-title" }, bot.name), main ? (0, import_react9.createElement)("span", { className: "bt-nav-role" }, t("Main Bot")) : null, pinned ? (0, import_react9.createElement)(PinMark) : null),
+      awayLine ? (0, import_react9.createElement)("span", { className: "bt-row-preview" }, awayLine) : waitsFor ? (0, import_react9.createElement)("span", { className: "bt-row-preview" }, waitsFor) : null
     ) : null,
     wide && unread && !active ? (0, import_react9.createElement)("span", { className: "bt-unread", "aria-hidden": true }) : null
   );
@@ -5245,19 +5207,20 @@ function RoomRow({ room: room2, roster, actions, useSessions, useSessionStatus, 
       "aria-label": label,
       "aria-current": active ? "page" : void 0,
       "data-room-id": id,
+      title: preview || room2.name,
       onClick: () => actions.openSession(id),
       onContextMenu: (event) => {
         event.preventDefault();
         actions.openMenu({ kind: "room", id, x: event.clientX, y: event.clientY });
       }
     },
-    (0, import_react9.createElement)(RoomAvatar, { room: room2, roster, size: 36 }),
+    (0, import_react9.createElement)("span", { className: "bt-nav-icon", "aria-hidden": true }, (0, import_react9.createElement)(ChatsIcon)),
     pinned && !wide ? (0, import_react9.createElement)(PinMark) : null,
     wide ? (0, import_react9.createElement)(
       "span",
       { className: "bt-row-body" },
       (0, import_react9.createElement)("span", { className: "bt-row-name" }, (0, import_react9.createElement)("span", { className: "bt-row-title" }, room2.name), pinned ? (0, import_react9.createElement)(PinMark) : null),
-      workingLine ? (0, import_react9.createElement)("span", { className: "bt-row-preview" }, workingLine) : preview ? (0, import_react9.createElement)("span", { className: "bt-row-preview" }, preview) : null
+      workingLine ? (0, import_react9.createElement)("span", { className: "bt-row-preview" }, workingLine) : null
     ) : null,
     wide && approval && !active ? (0, import_react9.createElement)("span", { className: "bt-unread bt-unread-wait", "aria-hidden": true }) : wide && unread && !active ? (0, import_react9.createElement)("span", { className: "bt-unread", "aria-hidden": true }) : null
   );
@@ -5461,11 +5424,20 @@ function TeamSidebar(props) {
     wide ? (0, import_react9.createElement)(
       "div",
       { className: "bt-side-top" },
-      (0, import_react9.createElement)("span", { className: "bt-brand" }, (0, import_react9.createElement)(BrandMark, { size: 22 }), (0, import_react9.createElement)(BrandName)),
-      (0, import_react9.createElement)(UpdateButton, { useUpdate: props.useUpdate, actions }),
-      (0, import_react9.createElement)("button", { type: "button", className: "bt-round", "aria-label": t("Search"), title: t("Search"), onClick: () => actions.openPalette() }, (0, import_react9.createElement)(SearchIcon)),
-      (0, import_react9.createElement)("button", { type: "button", className: "bt-round", "aria-label": t("New…"), title: t("New…"), onClick: () => actions.openNewChat("new") }, (0, import_react9.createElement)(PlusIcon)),
-      (0, import_react9.createElement)("button", { type: "button", className: "bt-round bt-side-collapse", "aria-label": t("Collapse sidebar"), title: t("Collapse sidebar"), onClick: () => actions.toggleSidebar() }, (0, import_react9.createElement)(SidebarIcon))
+      (0, import_react9.createElement)(
+        "div",
+        { className: "bt-side-brand-row" },
+        (0, import_react9.createElement)("span", { className: "bt-brand" }, (0, import_react9.createElement)(BrandMark, { size: 22 }), (0, import_react9.createElement)(BrandName)),
+        (0, import_react9.createElement)(UpdateButton, { useUpdate: props.useUpdate, actions }),
+        (0, import_react9.createElement)("button", { type: "button", className: "bt-round bt-side-collapse", "aria-label": t("Collapse sidebar"), title: t("Collapse sidebar"), onClick: () => actions.toggleSidebar() }, (0, import_react9.createElement)(SidebarIcon))
+      ),
+      (0, import_react9.createElement)("button", { type: "button", className: "bt-new-chat", "aria-label": t("New…"), onClick: () => actions.openNewChat("new") }, (0, import_react9.createElement)(PlusIcon), t("New chat")),
+      (0, import_react9.createElement)(
+        "div",
+        { className: "bt-side-list-head" },
+        (0, import_react9.createElement)("span", null, t("Bots")),
+        (0, import_react9.createElement)("button", { type: "button", className: "bt-round", "aria-label": t("Search"), title: t("Search"), onClick: () => actions.openPalette() }, (0, import_react9.createElement)(SearchIcon))
+      )
     ) : (0, import_react9.createElement)(
       import_react9.Fragment,
       null,
@@ -5626,8 +5598,7 @@ function ConnectPlugins({ wide, actions }) {
         onClick: () => actions.selectPanel("plugins")
       },
       (0, import_react9.createElement)(PlugIcon),
-      t("Connect plugins"),
-      (0, import_react9.createElement)("span", { className: "bt-connect-warn", "aria-hidden": true }, "!")
+      t("Plugins")
     ),
     tip && box ? (0, import_react_dom3.createPortal)((0, import_react9.createElement)(
       "span",
@@ -5640,7 +5611,7 @@ function YouAvatar() {
   return (0, import_react9.createElement)(
     "span",
     { className: "bt-you-wrap" },
-    (0, import_react9.createElement)("span", { className: "bt-you", "aria-hidden": true }, (0, import_react9.createElement)(BotMark, { look: MAIN_LOOK, size: 24 })),
+    (0, import_react9.createElement)("span", { className: "bt-you", "aria-hidden": true }, (0, import_react9.createElement)(GearIcon)),
     (0, import_react9.createElement)("span", { style: { position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" } }, t("Settings"))
   );
 }
@@ -5765,8 +5736,9 @@ function AccountLauncher({ seat = true, settingsOpen, openSettings, openOnboardi
     null,
     (0, import_react9.createElement)(
       "button",
-      { ref: button, type: "button", className: "bt-account", "aria-label": t("Account"), "aria-haspopup": "menu", "aria-expanded": open, onClick: toggle },
-      (0, import_react9.createElement)("span", { className: "bt-you", "aria-hidden": true }, (0, import_react9.createElement)(BotMark, { look: MAIN_LOOK, size: 24 }))
+      { ref: button, type: "button", className: "bt-account", "aria-label": t("Settings"), "aria-haspopup": "menu", "aria-expanded": open, onClick: toggle },
+      (0, import_react9.createElement)("span", { className: "bt-you", "aria-hidden": true }, (0, import_react9.createElement)(GearIcon)),
+      (0, import_react9.createElement)("span", { className: "bt-account-label" }, t("Settings"))
     ),
     open && box ? (0, import_react_dom3.createPortal)((0, import_react9.createElement)(
       "div",
@@ -5818,10 +5790,10 @@ function FooterAccount(props) {
   return (0, import_react9.createElement)("span", { className: "bt-foot-account" }, (0, import_react9.createElement)(AccountLauncher, { ...props, seat: false }));
 }
 function BrandMark({ size = 24 }) {
-  return (0, import_react9.createElement)("span", { className: "bt-brand-whale" }, (0, import_react9.createElement)(BotMark, { look: MAIN_LOOK, size }));
+  return (0, import_react9.createElement)("span", { className: "bt-brand-whale" }, (0, import_react9.createElement)(import_dsh_client_ui_primitives.FishLogo, { size }));
 }
 function BrandName() {
-  return (0, import_react9.createElement)("span", { style: { fontWeight: 600, fontSize: 14 } }, "DS Bot");
+  return (0, import_react9.createElement)("span", { style: { fontWeight: 600, fontSize: 14 } }, "Halfsignal");
 }
 var SIDEBAR_CSS = `
 .bt-side-top .bt-brand{cursor:default;padding-left:6px}
@@ -5914,7 +5886,7 @@ function MemoryNotice({ shown }) {
     (0, import_react10.createElement)("span", { className: "bt-pill-mem-in", ref: inner }, (0, import_react10.createElement)("span", { className: "bt-pill-mem-ico" }, (0, import_react10.createElement)(MemoryIcon)), label)
   );
 }
-function HeaderPill({ sessionId, useRoster, useSessions, useSessionStatus, useSession, useActivity, useMemoryNews, useTurnClock, useUi, useLive, actions }) {
+function HeaderPill({ sessionId, useRoster, useSessions, useSessionStatus, useSession, useMemoryNews, useTurnClock, useUi, useLive, actions }) {
   const roster = useRoster((value) => value);
   const title = useSessions((list) => list.byId[sessionId]?.displayTitle ?? list.byId[sessionId]?.title ?? "");
   const firstTurns = useSessions((list) => {
@@ -5932,9 +5904,6 @@ function HeaderPill({ sessionId, useRoster, useSessions, useSessionStatus, useSe
     else document.body.style.removeProperty("--bt-first-sep");
     return () => document.body.style.removeProperty("--bt-first-sep");
   }, [opening]);
-  const running = useSessionStatus((map) => map.get(sessionId)?.running === true);
-  const owner = roster.byId[sessionId]?.id ?? sessionId;
-  const doing = useActivity((map) => map[owner]);
   const bot = roster.byId[sessionId];
   const room2 = roster.roomsById[sessionId];
   const detailsOpen = useUi((state) => state.details === sessionId);
@@ -5971,7 +5940,7 @@ function HeaderPill({ sessionId, useRoster, useSessions, useSessionStatus, useSe
         "aria-label": memoryNotice ? t("Memory updated. Open {name}'s memory", { name: roster.byId[changed]?.name ?? name }) : t("View conversation details"),
         onClick: () => memoryNotice ? actions.openMemory(changed) : actions.toggleDetails(sessionId)
       },
-      bot ? (0, import_react10.createElement)(BotAvatar, { bot, size: 24, state: botState(running, doing, roster.questions?.[currentPart(bot)] !== void 0), badge: false }) : room2 ? (0, import_react10.createElement)(RoomAvatar, { room: room2, roster, size: 24 }) : null,
+      (0, import_react10.createElement)("span", { className: "bt-header-symbol", "aria-hidden": true }, (0, import_react10.createElement)(room2 ? ChatsIcon : PeopleIcon)),
       (0, import_react10.createElement)("span", { className: "bt-pill-name" }, bot?.name ?? room2?.name ?? (title || t("New chat"))),
       (0, import_react10.createElement)(MemoryNotice, { shown: memoryNotice }),
       (0, import_react10.createElement)("span", { className: "bt-pill-go", "aria-hidden": true }, (0, import_react10.createElement)(GoArrow))
@@ -10963,7 +10932,7 @@ function AboutPage({ useUpdate, actions, run, Section, Row: Row3 }) {
       (0, import_react29.createElement)(
         "div",
         { className: "bt-about-copy" },
-        (0, import_react29.createElement)("span", { className: "bt-about-name" }, "DS Bot"),
+        (0, import_react29.createElement)("span", { className: "bt-about-name" }, "Halfsignal"),
         update.current ? (0, import_react29.createElement)("span", { className: "bt-about-version" }, t("Version {version}", { version: update.current })) : null
       ),
       repo ? (0, import_react29.createElement)(
@@ -10984,7 +10953,7 @@ function AboutPage({ useUpdate, actions, run, Section, Row: Row3 }) {
     (0, import_react29.createElement)(
       Section,
       { key: "updates", title: t("Updates") },
-      (0, import_react29.createElement)(Row3, { label: "DS Bot", hint: botHint(update) }, botControl, update.available && update.notesUrl ? (0, import_react29.createElement)("a", linkProps(update.notesUrl), t("What's new")) : null),
+      (0, import_react29.createElement)(Row3, { label: "Halfsignal", hint: botHint(update) }, botControl, update.available && update.notesUrl ? (0, import_react29.createElement)("a", linkProps(update.notesUrl), t("What's new")) : null),
       dsh?.current ? (0, import_react29.createElement)(Row3, { label: "DeepSeek Harness", hint: dshHint(dsh, dshShown) }, dshControl) : null
     ),
     (0, import_react29.createElement)(
@@ -13777,6 +13746,84 @@ function BotEntry({ actions }) {
   return null;
 }
 
+// src/client/native-theme.js
+var NATIVE_TOKENS = `
+html body,html body[data-ds-dark-theme]{
+--bt-ink:var(--dsw-alias-label-primary);--bt-ink-2:var(--dsw-alias-label-secondary);--bt-ink-3:var(--dsw-alias-label-tertiary);
+--bt-main:var(--dsw-alias-bg-base);--bt-sidebar:var(--dsw-specific-sidebar-fill);--bt-card:var(--dsw-specific-input-major);--bt-bubble:var(--dsw-alias-bg-layer-2);
+--bt-line:var(--dsw-alias-border-l1);--bt-line-2:var(--dsw-alias-border-l2);--bt-line-weak:var(--dsw-alias-border-l1);
+--bt-hover:var(--dsw-alias-interactive-bg-hover);--bt-active:var(--dsw-alias-interactive-bg-hover);
+--bt-accent:var(--dsw-alias-state-business-primary);--bt-accent-ink:var(--dsw-alias-label-primary-inverted);
+--bt-user:var(--dsw-specific-bubble);--bt-user-ink:var(--dsw-alias-label-primary);
+--bt-tag-bg:var(--dsw-alias-interactive-bg-hover);--bt-tag-ink:var(--dsw-alias-label-secondary);
+--bt-danger:var(--dsw-alias-state-error-primary);--bt-green:var(--dsw-alias-state-success-primary);--bt-star:var(--dsw-alias-state-warn-primary)
+}`;
+var NATIVE_SHELL_CSS = `
+.bt-side{padding:0 14px 8px 2px;font-family:inherit;gap:4px}
+.bt-side-top{display:flex;flex-direction:column;align-items:stretch;padding:0 0 4px;gap:12px}
+.bt-side-brand-row{display:flex;align-items:center;gap:8px;min-height:40px;margin-bottom:8px}
+.bt-brand{padding:0 4px;gap:8px;font:inherit;font-weight:600}
+.bt-brand-whale{color:var(--bt-ink)}
+.bt-round{width:28px;height:28px;border:0;border-radius:var(--dsw-radius-sm,8px);background:none;color:var(--bt-ink-2)}
+.bt-new-chat{display:flex;align-items:center;justify-content:center;gap:8px;min-height:38px;padding:8px 12px;border:.5px solid var(--bt-line-2);border-radius:var(--dsw-radius-md,12px);background:var(--bt-card);color:var(--bt-ink);font:inherit;font-size:14px;cursor:pointer}
+.bt-new-chat:hover{background:var(--bt-hover)}
+.bt-side-list-head{display:flex;align-items:center;justify-content:space-between;padding:0 6px;color:var(--bt-ink-3);font-size:12px;line-height:20px}
+.bt-list{gap:4px}
+.bt-row{min-height:36px;padding:7px 8px;gap:8px;border-radius:var(--dsw-radius-md,12px)}
+.bt-row-name{line-height:22px}
+.bt-row-preview{font-size:12px;line-height:18px}
+.bt-nav-icon{position:relative;flex:none;display:inline-flex;align-items:center;justify-content:center;width:16px;height:20px;color:var(--bt-ink)}
+.bt-nav-icon svg{width:16px;height:16px}
+.bt-nav-icon[data-state=working]::after,.bt-nav-icon[data-state=alert]::after{content:'';position:absolute;right:-2px;bottom:0;width:5px;height:5px;border-radius:50%;background:var(--bt-green);box-shadow:0 0 0 1px var(--bt-sidebar)}
+.bt-nav-icon[data-state=alert]::after{background:var(--bt-star)}
+.bt-nav-role{margin-left:auto;font-size:11px;font-weight:400;color:var(--bt-ink-3);white-space:nowrap}
+.bt-rail{padding:0 0 8px;gap:8px}
+.bt-rail .bt-row{width:36px;min-height:36px;padding:7px 0}
+.bt-rail .bt-nav-role{display:none}
+.bt-agent-ava{width:16px;height:20px;background:none;border:0}
+.bt-agent-ava svg{width:16px;height:16px}
+[class*="_footArea"]{grid-template-columns:minmax(0,1fr);gap:4px;padding:8px 2px!important}
+[class*="_footArea"]>[class*="_footerActions"]>div>.bt-connect-wrap,[class*="_footArea"]>[class*="_settingsArea"]{grid-column:1;order:initial;width:100%!important}
+.bt-connect{justify-content:flex-start;gap:8px;padding:7px 8px;border:0;background:none;border-radius:var(--dsw-radius-md,12px);box-sizing:border-box;font:inherit;font-size:14px;line-height:22px}
+.bt-connect svg{width:16px;height:16px}
+.bt-connect:hover{background:var(--bt-hover)}
+[class*="_triggerRow"]:has(.bt-account){margin:0!important;width:100%!important}
+.bt-account{box-sizing:border-box;width:100%;min-height:36px;height:36px;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--dsw-radius-md,12px);color:var(--bt-ink);font:inherit;font-size:14px;line-height:22px}
+.bt-account:hover,.bt-account[aria-expanded=true]{background:var(--bt-hover)}
+.bt-you{width:16px;height:20px;background:none;box-shadow:none;color:var(--bt-ink)}
+.bt-you svg{width:16px;height:16px}
+button:hover .bt-you,.bt-account[aria-expanded=true] .bt-you{background:none}
+.bt-account-label{padding-right:8px}
+[data-sidebar-collapsed] .bt-account{justify-content:center;padding:0;width:36px}
+[data-sidebar-collapsed] .bt-account-label{display:none}
+.bt-settings{border-radius:var(--dsw-radius-panel,16px);box-shadow:var(--dsw-elevation-soft);background:var(--bt-main)}
+.bt-settings-nav{background:var(--bt-sidebar)}
+.bt-settings-item{min-height:36px;font-size:14px}
+.bt-settings-head h2{font-size:18px;line-height:26px}
+:is(.bt-round,.bt-new-chat,.bt-row,.bt-connect,.bt-account,.bt-pill):focus-visible{outline:2px solid var(--bt-accent);outline-offset:-2px}
+`;
+var NATIVE_CONVERSATION_CSS = `
+.bt-head{justify-content:flex-start;height:36px}
+.bt-pill{height:32px;padding:4px 8px;gap:8px;border:0;border-radius:var(--dsw-radius-sm,8px);box-shadow:none;background:none;max-width:calc(100% - 48px)}
+.bt-pill:hover{background:var(--bt-hover)}
+.bt-pill:active{transform:none}
+.bt-header-symbol{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;color:var(--bt-ink-2)}
+.bt-header-symbol svg{width:18px;height:18px}
+.bt-head-side{right:0;top:2px}
+.bt-astack{width:100%;gap:12px}
+.bt-msg,.bt-astack[data-lead]>.bt-msg{max-width:100%;width:100%}
+.bt-msg-line{width:100%;align-items:flex-start}
+.bt-msg{padding-bottom:20px}
+.bt-msg-line>.bt-tools{left:auto;right:0;bottom:-22px;top:auto;transform:none}
+.bt-msg-line>.bt-bubble{flex:1;padding:4px 0;border:0;border-radius:0;background:none;line-height:1.7}
+.bt-msg-tools{align-self:flex-end}
+.bt-bubble [class*="_markdown"]>*+*{margin-top:14px}
+.bt-ubody{border-radius:var(--dsw-radius-md,12px);padding:10px 16px;line-height:1.6}
+.bt-plus{border-radius:var(--dsw-radius-sm,8px);background:none;box-shadow:none}
+[data-composer-placeholder]{inset:4px 8px auto 14px!important}
+.bt-icon-btn{border-radius:var(--dsw-radius-sm,8px)}
+`;
+
 // src/client/index.js
 var inject = ["sessions", "uiWorkspace", "uiConversation", "slots", "theme", "layout"];
 function apply(ctx) {
@@ -14034,9 +14081,9 @@ function apply(ctx) {
       const next = `${id}|${accent ?? ""}|${motion}|${registry.getSnapshot()}`;
       if (next === key) return;
       key = next;
-      style.textContent = themeCss(themes[id], accent);
+      style.textContent = id === "deepseek" ? NATIVE_TOKENS + nativeAccentCss(accent) : themeCss(themes[id], accent);
       const release = releaseTokens;
-      releaseTokens = ctx.theme.overrideTokens("ds-bot", shellTokens(themes[id]));
+      releaseTokens = id === "deepseek" ? null : ctx.theme.overrideTokens("ds-bot", shellTokens(themes[id]));
       if (typeof release === "function") release();
       if (snapshot.ready) {
         try {
@@ -14366,7 +14413,7 @@ function apply(ctx) {
     controller.toggleSource(CHATS_SOURCE, { trigger: "@", query: "", quoted: false, position: "inline", span });
   };
   const installShell = () => [
-    () => installCompiledStyles(SHELL_CSS, "shell"),
+    () => installCompiledStyles(SHELL_CSS + NATIVE_SHELL_CSS, "shell"),
     () => installCompiledStyles(SIDEBAR_CSS, "sidebar"),
     () => installCompiledStyles(SECRET_CSS, "secrets"),
     () => installCompiledStyles(MODEL_CSS + FOLDER_CSS + BOT_SETTINGS_CSS + GROUP_SETTINGS_CSS, "models"),
@@ -14392,7 +14439,7 @@ function apply(ctx) {
     () => shadow("shell.overlay", { id: "bot-toast", order: 60, inject: face }, ErrorToast)
   ];
   const installConversation = () => [
-    () => installCompiledStyles(CONVERSATION_CSS, "conversation"),
+    () => installCompiledStyles(CONVERSATION_CSS + NATIVE_CONVERSATION_CSS, "conversation"),
     () => installMentions(),
     () => installAtMenu(),
     () => shadow("conversation.session.header", { priority: BOT_PRIORITY, inject: face }, HeaderPill),

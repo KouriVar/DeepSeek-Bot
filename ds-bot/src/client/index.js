@@ -3,7 +3,7 @@ import { isHex, inkText, paintCss } from './inks.js'
 import { DEFAULT_MASK, SHAPES, markupCache, maskOf } from './characters.js'
 import { createSource, EMPTY_ROSTER, indexRoster, isAgentSession } from './sources.js'
 import { teamActions } from './team-actions.js'
-import { themeCss, shellTokens, registry, registerShape, registerTheme, allThemes } from './themes.js'
+import { themeCss, nativeAccentCss, shellTokens, registry, registerShape, registerTheme, allThemes } from './themes.js'
 import { MENTION_ORIGIN, currentPart } from './text.js'
 import { SHELL_CSS, CONVERSATION_CSS, installStyles, installCompiledStyles } from './styles.js'
 import { lookOf } from './mark.js'
@@ -36,6 +36,7 @@ import { MEMBER_CSS, MemberDock } from './member-status.js'
 import { USER_MESSAGE_CSS, UserMessageCell, canDrawUserMessages } from './user-message.js'
 import { noticeApprovals } from './approval-notices.js'
 import { BotEntry, BotPanelIcon } from './bot-entry.js'
+import { NATIVE_TOKENS, NATIVE_SHELL_CSS, NATIVE_CONVERSATION_CSS } from './native-theme.js'
 
 export const inject = ['sessions', 'uiWorkspace', 'uiConversation', 'slots', 'theme', 'layout']
 
@@ -292,9 +293,9 @@ export function apply(ctx) {
       const next = `${id}|${accent ?? ''}|${motion}|${registry.getSnapshot()}`
       if (next === key) return
       key = next
-      style.textContent = themeCss(themes[id], accent)
+      style.textContent = id === 'deepseek' ? NATIVE_TOKENS + nativeAccentCss(accent) : themeCss(themes[id], accent)
       const release = releaseTokens
-      releaseTokens = ctx.theme.overrideTokens('ds-bot', shellTokens(themes[id]))
+      releaseTokens = id === 'deepseek' ? null : ctx.theme.overrideTokens('ds-bot', shellTokens(themes[id]))
       if (typeof release === 'function') release()
       if (snapshot.ready) {
         try { localStorage.setItem(PREFS_KEY, JSON.stringify({ theme: prefs.theme, accent: prefs.accent, motion: prefs.motion })) } catch { /* storage unavailable */ }
@@ -630,7 +631,7 @@ export function apply(ctx) {
   // group re-skins the session itself. Each step returns a disposer from slots.inject,
   // so a surface change withdraws the whole group and the outlets re-render.
   const installShell = () => [
-    () => installCompiledStyles(SHELL_CSS, 'shell'),
+    () => installCompiledStyles(SHELL_CSS + NATIVE_SHELL_CSS, 'shell'),
     () => installCompiledStyles(SIDEBAR_CSS, 'sidebar'),
     () => installCompiledStyles(SECRET_CSS, 'secrets'),
     () => installCompiledStyles(MODEL_CSS + FOLDER_CSS + BOT_SETTINGS_CSS + GROUP_SETTINGS_CSS, 'models'),
@@ -656,7 +657,7 @@ export function apply(ctx) {
     () => shadow('shell.overlay', { id: 'bot-toast', order: 60, inject: face }, ErrorToast),
   ]
   const installConversation = () => [
-    () => installCompiledStyles(CONVERSATION_CSS, 'conversation'),
+    () => installCompiledStyles(CONVERSATION_CSS + NATIVE_CONVERSATION_CSS, 'conversation'),
     () => installMentions(),
     () => installAtMenu(),
     () => shadow('conversation.session.header', { priority: BOT_PRIORITY, inject: face }, HeaderPill),

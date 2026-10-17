@@ -1,8 +1,7 @@
 import { createElement as h, Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { currentPart, latestMemoryChange } from './text.js'
-import { ArrowUpIcon, CloseIcon, ArrowDownIcon, MemoryIcon, SidePanelIcon } from './icons.js'
-import { botState, BotAvatar, RoomAvatar } from './mark.js'
+import { latestMemoryChange } from './text.js'
+import { ArrowUpIcon, CloseIcon, ArrowDownIcon, MemoryIcon, SidePanelIcon, PeopleIcon, ChatsIcon } from './icons.js'
 import { ActivityIndicator } from './activity-row.js'
 import { clockLabel, openingTurn, unseenSince } from './cells.js'
 import { t } from './i18n.js'
@@ -42,7 +41,7 @@ function MemoryNotice({ shown }) {
     h('span', { className: 'bt-pill-mem-in', ref: inner }, h('span', { className: 'bt-pill-mem-ico' }, h(MemoryIcon)), label))
 }
 
-export function HeaderPill({ sessionId, useRoster, useSessions, useSessionStatus, useSession, useActivity, useMemoryNews, useTurnClock, useUi, useLive, actions }) {
+export function HeaderPill({ sessionId, useRoster, useSessions, useSessionStatus, useSession, useMemoryNews, useTurnClock, useUi, useLive, actions }) {
   const roster = useRoster(value => value)
   const title = useSessions(list => list.byId[sessionId]?.displayTitle ?? list.byId[sessionId]?.title ?? '')
   const firstTurns = useSessions((list) => {
@@ -62,9 +61,6 @@ export function HeaderPill({ sessionId, useRoster, useSessions, useSessionStatus
     else document.body.style.removeProperty('--bt-first-sep')
     return () => document.body.style.removeProperty('--bt-first-sep')
   }, [opening])
-  const running = useSessionStatus(map => map.get(sessionId)?.running === true)
-  const owner = roster.byId[sessionId]?.id ?? sessionId
-  const doing = useActivity(map => map[owner])
   const bot = roster.byId[sessionId]
   const room = roster.roomsById[sessionId]
   const detailsOpen = useUi(state => state.details === sessionId)
@@ -95,8 +91,7 @@ export function HeaderPill({ sessionId, useRoster, useSessions, useSessionStatus
       'aria-label': memoryNotice ? t('Memory updated. Open {name}\'s memory', { name: roster.byId[changed]?.name ?? name }) : t('View conversation details'),
       onClick: () => (memoryNotice ? actions.openMemory(changed) : actions.toggleDetails(sessionId)),
     },
-    bot ? h(BotAvatar, { bot, size: 24, state: botState(running, doing, roster.questions?.[currentPart(bot)] !== undefined), badge: false })
-      : room ? h(RoomAvatar, { room, roster, size: 24 }) : null,
+    h('span', { className: 'bt-header-symbol', 'aria-hidden': true }, h(room ? ChatsIcon : PeopleIcon)),
     h('span', { className: 'bt-pill-name' }, bot?.name ?? room?.name ?? (title || t('New chat'))),
     h(MemoryNotice, { shown: memoryNotice }),
     h('span', { className: 'bt-pill-go', 'aria-hidden': true }, h(GoArrow))),

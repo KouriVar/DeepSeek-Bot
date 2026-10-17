@@ -3,9 +3,8 @@ import { createPortal } from 'react-dom'
 import { FishLogo } from './dsh-primitives.js'
 import { isMainOf } from './sources.js'
 import { currentPart, previewOf, relativeShort } from './text.js'
-import { PlusIcon, SearchIcon, SidebarIcon, GaugeIcon, PlugIcon, ClockIcon, GearIcon, PinMarkIcon, ConnectorIcon, SwitchIcon, CloudDownloadIcon } from './icons.js'
-import { MAIN_LOOK } from './characters.js'
-import { botState, BotMark, BotAvatar, RoomAvatar } from './mark.js'
+import { PlusIcon, SearchIcon, SidebarIcon, GaugeIcon, PlugIcon, ClockIcon, GearIcon, PinMarkIcon, ConnectorIcon, SwitchIcon, CloudDownloadIcon, PeopleIcon, ChatsIcon } from './icons.js'
+import { botState } from './mark.js'
 import { reducedMotion } from './activity-row.js'
 import { Shimmer, workPhrase } from './cells.js'
 import { springEasing, SPRING_SHAPE } from './motion.js'
@@ -68,26 +67,17 @@ function BotRow({ bot, roster, actions, useSessions, useSessionStatus, useSessio
   }
   const pinned = bot.pinned === true && !tile
   const label = [bot.name, main ? t('Main Bot') : '', pinned ? t('Pinned') : '', running || away ? t('Working') : '', waitsFor, approval ? t('Waiting for your approval') : alert ? t('Waiting for your answer') : '', unread ? t('Unread activity') : ''].filter(Boolean).join(', ')
-  if (tile && wide) {
-    return h('div', { className: 'bt-tile-wrap' }, h('button', {
-      type: 'button', className: 'bt-tile', 'aria-label': label, 'aria-current': active ? 'page' : undefined,
-      'data-bot-id': id, title: preview || bot.name, onClick: () => actions.openSession(id), onContextMenu,
-    },
-    h(BotAvatar, { bot, size: 60, state, main: true }),
-    h('span', { className: 'bt-tile-name' }, bot.name),
-    bot.role ? h('span', { className: 'bt-chip' }, bot.role) : null))
-  }
   return h('button', {
     type: 'button', className: 'bt-row', 'aria-label': label, 'aria-current': active ? 'page' : undefined,
-    'data-bot-id': id, title: wide ? undefined : bot.name, onClick: () => actions.openSession(id), onContextMenu,
+    'data-bot-id': id, title: wide ? preview || bot.role || bot.name : bot.name, onClick: () => actions.openSession(id), onContextMenu,
   },
-  h(BotAvatar, { bot, size: 36, state, main }),
+  h('span', { className: 'bt-nav-icon', 'data-state': running || away ? 'working' : alert ? 'alert' : 'idle', 'aria-hidden': true }, h(PeopleIcon)),
   pinned && !wide ? h(PinMark) : null,
   wide ? h('span', { className: 'bt-row-body' },
-    h('span', { className: 'bt-row-name' }, h('span', { className: 'bt-row-title' }, bot.name), pinned ? h(PinMark) : null),
+    h('span', { className: 'bt-row-name' }, h('span', { className: 'bt-row-title' }, bot.name), main ? h('span', { className: 'bt-nav-role' }, t('Main Bot')) : null, pinned ? h(PinMark) : null),
     awayLine ? h('span', { className: 'bt-row-preview' }, awayLine)
       : waitsFor ? h('span', { className: 'bt-row-preview' }, waitsFor)
-        : preview ? h('span', { className: 'bt-row-preview' }, preview) : null) : null,
+        : null) : null,
   wide && unread && !active ? h('span', { className: 'bt-unread', 'aria-hidden': true }) : null)
 }
 
@@ -107,14 +97,14 @@ function RoomRow({ room, roster, actions, useSessions, useSessionStatus, useSess
   const label = [room.name, pinned ? t('Pinned') : '', members.length > 0 ? t('Working') : '', approval ? t('Waiting for your approval') : ''].filter(Boolean).join(', ')
   return h('button', {
     type: 'button', className: 'bt-row', 'aria-label': label, 'aria-current': active ? 'page' : undefined,
-    'data-room-id': id, onClick: () => actions.openSession(id),
+    'data-room-id': id, title: preview || room.name, onClick: () => actions.openSession(id),
     onContextMenu: (event) => { event.preventDefault(); actions.openMenu({ kind: 'room', id, x: event.clientX, y: event.clientY }) },
   },
-  h(RoomAvatar, { room, roster, size: 36 }),
+  h('span', { className: 'bt-nav-icon', 'aria-hidden': true }, h(ChatsIcon)),
   pinned && !wide ? h(PinMark) : null,
   wide ? h('span', { className: 'bt-row-body' },
     h('span', { className: 'bt-row-name' }, h('span', { className: 'bt-row-title' }, room.name), pinned ? h(PinMark) : null),
-    workingLine ? h('span', { className: 'bt-row-preview' }, workingLine) : preview ? h('span', { className: 'bt-row-preview' }, preview) : null) : null,
+    workingLine ? h('span', { className: 'bt-row-preview' }, workingLine) : null) : null,
   wide && approval && !active ? h('span', { className: 'bt-unread bt-unread-wait', 'aria-hidden': true })
     : wide && unread && !active ? h('span', { className: 'bt-unread', 'aria-hidden': true }) : null)
 }
@@ -277,11 +267,13 @@ export function TeamSidebar(props) {
   }
   return h('div', { className: wide ? 'bt-side' : 'bt-side bt-rail', onKeyDown: typeToSearch },
     wide ? h('div', { className: 'bt-side-top' },
-      h('span', { className: 'bt-brand' }, h(BrandMark, { size: 22 }), h(BrandName)),
-      h(UpdateButton, { useUpdate: props.useUpdate, actions }),
-      h('button', { type: 'button', className: 'bt-round', 'aria-label': t('Search'), title: t('Search'), onClick: () => actions.openPalette() }, h(SearchIcon)),
-      h('button', { type: 'button', className: 'bt-round', 'aria-label': t('New…'), title: t('New…'), onClick: () => actions.openNewChat('new') }, h(PlusIcon)),
-      h('button', { type: 'button', className: 'bt-round bt-side-collapse', 'aria-label': t('Collapse sidebar'), title: t('Collapse sidebar'), onClick: () => actions.toggleSidebar() }, h(SidebarIcon)))
+      h('div', { className: 'bt-side-brand-row' },
+        h('span', { className: 'bt-brand' }, h(BrandMark, { size: 22 }), h(BrandName)),
+        h(UpdateButton, { useUpdate: props.useUpdate, actions }),
+        h('button', { type: 'button', className: 'bt-round bt-side-collapse', 'aria-label': t('Collapse sidebar'), title: t('Collapse sidebar'), onClick: () => actions.toggleSidebar() }, h(SidebarIcon))),
+      h('button', { type: 'button', className: 'bt-new-chat', 'aria-label': t('New…'), onClick: () => actions.openNewChat('new') }, h(PlusIcon), t('New chat')),
+      h('div', { className: 'bt-side-list-head' }, h('span', null, t('Bots')),
+        h('button', { type: 'button', className: 'bt-round', 'aria-label': t('Search'), title: t('Search'), onClick: () => actions.openPalette() }, h(SearchIcon))))
       : h(Fragment, null,
           h(UpdateButton, { useUpdate: props.useUpdate, actions }),
           h('button', { type: 'button', className: 'bt-round', 'aria-label': t('New…'), title: t('New…'), onClick: () => actions.openNewChat('new') }, h(PlusIcon))),
@@ -408,7 +400,7 @@ export function ConnectPlugins({ wide, actions }) {
       onMouseEnter: show, onMouseLeave: hide, onFocus: show, onBlur: hide,
       onClick: () => actions.selectPanel('plugins'),
     },
-    h(PlugIcon), t('Connect plugins'), h('span', { className: 'bt-connect-warn', 'aria-hidden': true }, '!')),
+    h(PlugIcon), t('Plugins')),
     tip && box ? createPortal(h('span', { role: 'tooltip', id: tipId, className: 'bt-connect-tip', style: box },
       t('Plugin compatibility is not fully verified.')), document.body) : null)
 }
@@ -416,7 +408,7 @@ export function ConnectPlugins({ wide, actions }) {
 // Account seat of the Settings trigger: the visible label stays for assistive tech only.
 export function YouAvatar() {
   return h('span', { className: 'bt-you-wrap' },
-    h('span', { className: 'bt-you', 'aria-hidden': true }, h(BotMark, { look: MAIN_LOOK, size: 24 })),
+    h('span', { className: 'bt-you', 'aria-hidden': true }, h(GearIcon)),
     h('span', { style: { position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' } }, t('Settings')))
 }
 
@@ -529,8 +521,8 @@ export function AccountLauncher({ seat = true, settingsOpen, openSettings, openO
     ],
   ]
   return h(Fragment, null,
-    h('button', { ref: button, type: 'button', className: 'bt-account', 'aria-label': t('Account'), 'aria-haspopup': 'menu', 'aria-expanded': open, onClick: toggle },
-      h('span', { className: 'bt-you', 'aria-hidden': true }, h(BotMark, { look: MAIN_LOOK, size: 24 }))),
+    h('button', { ref: button, type: 'button', className: 'bt-account', 'aria-label': t('Settings'), 'aria-haspopup': 'menu', 'aria-expanded': open, onClick: toggle },
+      h('span', { className: 'bt-you', 'aria-hidden': true }, h(GearIcon)), h('span', { className: 'bt-account-label' }, t('Settings'))),
     open && box ? createPortal(h('div', { className: 'bt-menu bt-menu-up bt-account-menu', role: 'menu', 'aria-label': t('Account'), style: box },
       groups.map((group, index) => h(Fragment, { key: index },
         index > 0 ? h('div', { className: 'bt-menu-sep', role: 'separator' }) : null,
@@ -577,10 +569,10 @@ export function FooterAccount(props) {
 }
 
 export function BrandMark({ size = 24 }) {
-  return h('span', { className: 'bt-brand-whale' }, h(BotMark, { look: MAIN_LOOK, size }))
+  return h('span', { className: 'bt-brand-whale' }, h(FishLogo, { size }))
 }
 export function BrandName() {
-  return h('span', { style: { fontWeight: 600, fontSize: 14 } }, 'DS Bot')
+  return h('span', { style: { fontWeight: 600, fontSize: 14 } }, 'Halfsignal')
 }
 
 // With the whale holding the settings seat, the Bot row is just the account menu

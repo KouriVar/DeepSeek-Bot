@@ -5,6 +5,7 @@
 export const NAMESPACE = 'ds-bot'
 
 const ZH = {
+  Plugins: '插件',
   // Shared
   'Main Bot': '主 Bot',
   Working: '工作中',
@@ -943,7 +944,8 @@ export function installLocale(locale) {
 }
 
 export function t(key, params) {
-  return bound ? bound(key, params) : fill(key, params)
+  const copy = bound ? bound(key, params) : fill(key, params)
+  return key.includes('DS Bot') ? copy.replaceAll('DS Bot', 'Halfsignal') : copy
 }
 
 // A message from the host, in the interface language.

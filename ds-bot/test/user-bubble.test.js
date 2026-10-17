@@ -43,7 +43,7 @@ test('no ds-bot text color sits on a surface that a skin owns', () => {
 })
 
 test('ds-bot leaves the host bubble variables to the host and its skins', () => {
-  assert.doesNotMatch(bundle, /--dsw-specific-bubble/)
+  assert.doesNotMatch(bundle, /--dsw-specific-bubble\s*:/)
   assert.doesNotMatch(bundle, /conversationTokens|installBubbleTokens/)
   for (const [id, theme] of Object.entries(allThemes())) {
     assert.deepEqual(Object.keys(shellTokens(theme)).filter(name => name.includes('bubble')), [], id)

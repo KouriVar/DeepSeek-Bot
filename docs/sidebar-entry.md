@@ -1,6 +1,8 @@
 # Native sidebar entry
 
-This fork places DS Bot directly below Scheduled tasks in the Harness sidebar.
+This fork names the interface Halfsignal and places it directly below Scheduled
+tasks in the Harness sidebar. The package id remains `ds-bot` so existing teams,
+sessions and settings keep working.
 It registers `sidebar.panellist` at order 20, after Plugins (0) and Scheduled
 tasks (10), and uses the platform's `IconAgentPresetOutlineRegular` icon.
 Harness renders the row, including its typography, spacing, theme colors,
@@ -32,4 +34,10 @@ existing team sidebar.
 - In an isolated DSH Web 0.2.0-rc.2 profile, checked the three-row order and
   appearance, expanded and collapsed sidebars, and navigation back to Bot
   mode from Scheduled tasks.
-- The user's installed Desktop profile was not modified.
+- Light and dark themes, compact Bot rows, native composer layout and Bot settings
+  were checked with a local mock model.
+- Sidebar Bot, Plugins and Settings rows share a 16px icon column, 8px gap and
+  36px row height. The Settings launcher's negative margins and excess width are
+  neutralized. The input placeholder has a 14px left inset.
+- Built `ds-bot-0.1.7-halfsignal.1.tgz` and installed it into the existing Desktop
+  profile with the official bundled CLI. Bot and session data were retained.

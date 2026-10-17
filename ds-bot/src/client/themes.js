@@ -54,6 +54,10 @@ const darkAccent = (accent) => {
   const ink = ACCENT_INKS.find(id => INKS[id][0] === accent)
   return ink === undefined ? accent : INKS[ink][1]
 }
+export const nativeAccentCss = accent => (accent
+  ? `html body{--bt-accent:${accent};--bt-accent-ink:${accentInk(accent)}}
+html body[data-ds-dark-theme]{--bt-accent:${darkAccent(accent)};--bt-accent-ink:${accentInk(darkAccent(accent))}}`
+  : '')
 // `html body` outranks the base sheet's `body` rules without !important.
 export const themeCss = (theme, accent) => `html body{${declarations(themeVars(theme.light, false, accent ?? theme.light.accent))}}
 html body[data-ds-dark-theme]{${declarations(themeVars(theme.dark, true, darkAccent(accent) ?? theme.dark.accent))}}

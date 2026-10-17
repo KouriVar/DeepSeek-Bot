@@ -834,18 +834,8 @@ export const CONVERSATION_CSS = `
 :is([data-step-process],[data-turn-process-hidden])[hidden]{content-visibility:visible!important}
 [class*="_flowItem"]:has(> [data-slot="conversation.chat.node"]:empty){display:none!important}
 [class*="_header"]:has(.bt-head){border-bottom-color:transparent!important;box-shadow:none!important}
-/* The transcript runs under a floating header pill. */
-header[class*="_header"]:has(.bt-head){position:absolute!important;top:0;left:0;right:0;z-index:8;display:flex!important;padding:10px 0 0!important;background:transparent!important;pointer-events:none;justify-content:center}
-header[class*="_header"]:has(.bt-head)::before{content:"";position:absolute;inset:0 0 auto;height:60px;background:linear-gradient(to bottom,var(--bt-main),color-mix(in srgb,var(--bt-main) 0%,transparent));pointer-events:none;z-index:-1}
-header[class*="_header"]:has(.bt-head)>[class*="_headerLeading"]{position:absolute;left:12px;top:10px;pointer-events:auto}
-header[class*="_header"] .bt-head{flex:1 1 auto;width:100%}
-[class*="_body"]:has(> [class*="_scrollBody"]){--dsh-chat-content-width:min(960px,100%)}
-/* The shell writes the column's width on the conversation root at every resize, only to
-   derive the content width that the rule above replaces. Inherited, each write restyled
-   the whole conversation: once a frame while the details panel glides, most in a long
-   group chat. Kept on the root alone, a write restyles one element. */
-@property --dsh-conversation-column-width{syntax:"*";inherits:false}
-@property --dsh-chat-user-width{syntax:"*";inherits:false}
+/* Keep the shell's normal header and responsive content column. */
+header[class*="_header"] .bt-head{flex:1 1 auto;min-width:0}
 /* DSH's turn tail keeps what plugins put in it (delivered files, the Bot's separators),
    without its copy and branch row; a tail with nothing in it takes no room. */
 [data-turn-tail]>:not([data-slot="conversation.chat.turnTail"]){display:none!important}
@@ -856,9 +846,7 @@ header[class*="_header"] .bt-head{flex:1 1 auto;width:100%}
 [data-content-phase=hero] [class*="_scrollBody"]{justify-content:flex-end!important}
 [data-content-phase=hero] [class*="_composerHero"]{align-self:stretch!important;width:auto!important;padding-bottom:0!important}
 [data-content-phase=hero] [class*="_composerHero"]>[class$="_root"],[data-content-phase=hero] [class*="_heroWorkspaceRow"]{display:none!important}
-[data-content-phase=hero] [class*="_composerHero"] [class*="_input"]{min-height:0!important}
 /* The right sides give back the scrollbar gutter so both edges sit 16px from the column. */
-[class*="_scroll"]:has(> [class*="_column"]){padding:60px 11px 16px 16px!important}
 /* The shell's running status only hosts the activity row (.bt-typing). */
 [data-chat-running]{display:block!important;width:100%;min-height:0!important;margin:0!important;padding:0!important}
 [data-chat-running]>span:not([role=status]){display:none!important}
@@ -895,18 +883,6 @@ header[class*="_header"] .bt-head{flex:1 1 auto;width:100%}
 }
 @keyframes bt-fade-in{from{opacity:0}to{opacity:1}}
 @keyframes bt-fade-out{from{opacity:1}to{opacity:0}}
-[data-composer-card]{display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;align-items:center!important;gap:0!important;min-height:44px!important;border-radius:22px!important;padding:7.5px!important;box-sizing:border-box;background:var(--bt-main)!important;border:.5px solid var(--bt-line-2)!important;box-shadow:0 2px 8px -1px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.03),0 0 0 1px rgba(228,228,228,.04)!important;transition:border-color .15s ease,background-color .15s ease,${spring(SPRING_SHAPE, 'border-radius')}!important}
-[data-composer-card]:hover,[data-composer-card]:focus-within{border-color:color-mix(in srgb,var(--bt-ink) 30%,transparent)!important}
-[data-composer-card]:has(> [data-slot="conversation.input.attachments"] *),[data-composer-card]:has([data-composer-input] br + *),[data-composer-card]:has([data-composer-input] > :nth-child(2)){border-radius:18px!important}
-[class*="_root"]:has(> [data-composer-card]){padding:0 11px 13px 16px!important}
-[class*="_root"]:has(> [data-composer-card])>[data-composer-card]{max-width:min(992px,100%)!important}
-[data-composer-card]>[class*="_row"]{display:contents!important}
-[data-composer-card] [class*="_tools"]{order:1!important;flex:none!important;align-self:flex-end!important;margin:0!important}
-[data-composer-card]>[data-input-scroll]{order:2!important;flex:1 1 0!important;min-width:0!important;padding:0 8px!important;margin:0!important}
-[data-composer-card] [class*="_trailing"]{order:3!important;flex:none!important;align-self:flex-end!important;margin:0!important}
-[data-composer-card]>[data-slot="conversation.input.attachments"]{order:0!important;flex-basis:100%!important}
-[data-composer-card] [data-composer-input]{min-height:24px!important;padding:2px 0!important}
-[data-composer-card] [data-composer-placeholder]{left:0!important;top:2px!important}
 [data-composer-placeholder]{font-size:0!important;line-height:0!important}
 /* The name sits on ::before so that ::after stays free for other composer skins. */
 [data-composer-placeholder]::before{content:var(--bt-placeholder,"Message")!important;display:block!important;font-size:14px!important;line-height:24px!important;color:color-mix(in srgb,var(--bt-ink) 36%,transparent)!important}

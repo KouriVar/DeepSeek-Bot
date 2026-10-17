@@ -1,7 +1,7 @@
 {
   "name": "ds-bot",
-  "version": "0.1.7",
-  "description": "DS Bot: a team of long-lived Bots for DeepSeek Harness, with Main Bots, Bot-to-Bot messages and group chats",
+  "version": "0.1.7-halfsignal.1",
+  "description": "Halfsignal: a persistent Bot team for DeepSeek Harness with a native Harness interface",
   "keywords": [
     "dsh-plugin",
     "deepseek-harness",
