@@ -61,7 +61,7 @@ function shell({ platform, collapsed }) {
         ${darwin ? `<div class="x_topStrip">${toggle}</div>` : ''}
         <div class="x_logoRow">${collapsed ? '' : '<button class="x_brand x_wide"></button>'}${darwin ? '' : toggle}</div>
         <div class="x_newSession"></div>
-        <div class="team">${collapsed ? '' : '<div class="bt-side-top"><button class="bt-round bt-side-collapse"></button></div>'}</div>
+        <div class="team"></div>
         <div class="x_footArea"><span class="bt-foot-account"></span></div>
       </div>
     </div></body></html>`
@@ -82,13 +82,10 @@ for (const platform of ['web', 'windows', 'mac']) {
       const { document, hidden, switches } = shell({ platform, collapsed })
       assert.equal(switches.length, 1, `switches shown: ${switches.map(node => node.className).join(' | ') || 'none'}`)
       const [shown] = switches
-      // An open sidebar on the web has the team's own button; everywhere else the shell's
-      // switch stays where the shell puts it.
-      assert.equal(shown.classList.contains('bt-side-collapse'), platform === 'web' && !collapsed)
-      // What the team view replaces stays out of sight.
-      assert.equal(hidden(document.querySelector('.x_newSession')), true)
+      assert.equal(shown.classList.contains('x_toggle'), true)
+      assert.equal(hidden(document.querySelector('.x_newSession')), false)
       const brand = document.querySelector('.x_brand')
-      if (brand) assert.equal(hidden(brand), true)
+      if (brand) assert.equal(hidden(brand), false)
     })
   }
 }
@@ -113,14 +110,16 @@ test('an open sidebar has a button that collapses it; the rail leaves that to th
   button.props.onClick()
   assert.deepEqual(calls, ['toggle'])
   assert.equal(find(TeamSidebar(props(false)), collapse), undefined)
+  const native = TeamSidebar({ ...props(true), nativeHeader: true })
+  assert.equal(find(native, collapse), undefined)
+  assert.equal(find(native, node => ['bt-brand', 'bt-new-chat'].includes(node.props?.className)), undefined)
 })
 
-test('the logo row takes no room in an open sidebar under a Windows title bar', () => {
+test('the Bot surface leaves the Windows logo row geometry to Harness', () => {
   const { document } = shell({ platform: 'windows', collapsed: false })
   const row = document.querySelector('.x_logoRow')
   const flat = rules.filter(rule => row.matches(rule.selector) && /height:0!important/.test(rule.body))
-  assert.equal(flat.length, 1)
-  assert.equal(shell({ platform: 'windows', collapsed: true }).document.querySelector('.x_logoRow').matches(flat[0].selector), false)
+  assert.equal(flat.length, 0)
 })
 
 // The shell hides the footer of a collapsed sidebar under a Windows title bar, whose width

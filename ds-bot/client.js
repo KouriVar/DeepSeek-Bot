@@ -2537,12 +2537,7 @@ button.bt-set-row:hover{background:var(--bt-hover)}
 
 /* Shell chrome reshaped for the team view. Selectors use stable data attributes where the
    shell offers them and CSS-module name suffixes elsewhere. */
-[class*="_newSession"],nav[class*="_panelList"],[class*="_logoRow"]>[class*="_brand"],[class*="_logoRow"]:not(:has([class*="_toggle"])){display:none!important}
-/* The shell's sidebar switch stays where the shell puts it whenever the sidebar is
-   collapsed: on the rail, or fixed in a Windows title bar, where it also stays while
-   the sidebar is open. Elsewhere an open sidebar uses the team's own top row. */
-html:not([data-windows-titlebar]) :not([class*="_collapsed"])>[class*="_logoRow"]{display:none!important}
-html[data-windows-titlebar] :not([class*="_collapsed"])>[class*="_logoRow"]{height:0!important;margin:0!important}
+nav[class*="_panelList"]{display:none!important}
 html[data-windows-titlebar] .bt-side-collapse,html[data-platform=darwin] .bt-side-collapse{display:none}
 /* The footer ends in the Bot row: the whale's settings seat, then Connect plugins. Every
    other plugin's entry takes a whole row above it, in the shell's order, so none of them
@@ -5421,7 +5416,14 @@ function TeamSidebar(props) {
   return (0, import_react9.createElement)(
     "div",
     { className: wide ? "bt-side" : "bt-side bt-rail", onKeyDown: typeToSearch },
-    wide ? (0, import_react9.createElement)(
+    props.nativeHeader ? wide ? (0, import_react9.createElement)(
+      "div",
+      { className: "bt-side-list-head" },
+      (0, import_react9.createElement)("span", { className: "bt-side-list-title" }, t("Bots")),
+      (0, import_react9.createElement)(UpdateButton, { useUpdate: props.useUpdate, actions }),
+      (0, import_react9.createElement)("button", { type: "button", className: "bt-round", "aria-label": t("Search"), title: t("Search"), onClick: () => actions.openPalette() }, (0, import_react9.createElement)(SearchIcon)),
+      (0, import_react9.createElement)("button", { type: "button", className: "bt-round", "aria-label": t("New…"), title: t("New…"), onClick: () => actions.openNewChat("new") }, (0, import_react9.createElement)(PlusIcon))
+    ) : null : wide ? (0, import_react9.createElement)(
       "div",
       { className: "bt-side-top" },
       (0, import_react9.createElement)(
@@ -5766,16 +5768,19 @@ function useLandOnMainBot(roster, useSessions, actions) {
     return row ? `${row.id}|${row.blank ? 1 : 0}` : "";
   });
   const lastBot = (0, import_react9.useRef)(null);
+  const nativeSession = (0, import_react9.useRef)(null);
   (0, import_react9.useEffect)(() => {
     if (!roster.ready || !roster.mainBotId) return void 0;
     const [id, blank3] = mainView.split("|");
     const bot = id === "" ? void 0 : roster.byId[id];
     if (bot !== void 0) {
+      nativeSession.current = null;
       lastBot.current = { botId: bot.id, sessionId: id };
       if (currentPart(bot) !== id) actions.landOn(bot.id);
       return void 0;
     }
-    if (id !== "" && (roster.roomsById[id] || (actions.isAgentSession?.(id) ?? roster.agentOf[id] !== void 0) || blank3 !== "1")) {
+    if (id !== "" && (roster.roomsById[id] || (actions.isAgentSession?.(id) ?? roster.agentOf[id] !== void 0) || blank3 !== "1" || lastBot.current !== null || nativeSession.current === id)) {
+      nativeSession.current = id;
       lastBot.current = null;
       return void 0;
     }
@@ -13768,6 +13773,7 @@ var NATIVE_SHELL_CSS = `
 .bt-new-chat{display:flex;align-items:center;justify-content:center;gap:8px;min-height:38px;padding:8px 12px;border:.5px solid var(--bt-line-2);border-radius:var(--dsw-radius-md,12px);background:var(--bt-card);color:var(--bt-ink);font:inherit;font-size:14px;cursor:pointer}
 .bt-new-chat:hover{background:var(--bt-hover)}
 .bt-side-list-head{display:flex;align-items:center;justify-content:space-between;padding:0 6px;color:var(--bt-ink-3);font-size:12px;line-height:20px}
+.bt-side-list-title{margin-right:auto}
 .bt-list{gap:4px}
 .bt-row{min-height:36px;padding:7px 8px;gap:8px;border-radius:var(--dsw-radius-md,12px)}
 .bt-row-name{line-height:22px}
@@ -14425,9 +14431,7 @@ function apply(ctx) {
     () => installCompiledStyles(USER_MESSAGE_CSS, "user-messages"),
     browsers ? () => installCompiledStyles(BROWSER_CSS, "browser") : null,
     () => installTheme(),
-    () => shadow("sidebar.workspaces", { priority: BOT_PRIORITY, inject: face }, TeamSidebar),
-    () => shadow("sidebar.brand.mark", { priority: BOT_PRIORITY }, BrandMark),
-    () => shadow("sidebar.brand.name", { priority: BOT_PRIORITY }, BrandName),
+    () => shadow("sidebar.workspaces", { priority: BOT_PRIORITY, inject: () => ({ ...face(), nativeHeader: true }) }, TeamSidebar),
     () => shadow("sidebar.footer.action", { id: "bot-account", order: -200, inject: face }, FooterAccount),
     () => shadow("sidebar.footer.action", { id: "bot-connect", order: -100, inject: face }, ConnectPlugins),
     () => shadow("settings.trigger", { priority: BOT_PRIORITY }, YouAvatar),
@@ -14480,7 +14484,8 @@ function apply(ctx) {
     const sync = () => {
       const list = ctx.sessions.list.getSnapshot();
       const main = Object.values(list.byId ?? {}).find((session) => (session?.retainedBy?.mainView ?? 0) > 0)?.id;
-      const plain = isAgentSessionId(main);
+      const snapshot = roster.getSnapshot();
+      const plain = isAgentSessionId(main) || snapshot.ready && main !== void 0 && snapshot.byId[main] === void 0 && snapshot.roomsById[main] === void 0;
       setPlain(plain);
       if (plain) dropPanels();
       if (main === previous) return;
@@ -14492,7 +14497,6 @@ function apply(ctx) {
       if (surface.getSnapshot().mode !== "bot") return;
       const agentId = before !== void 0 ? agentOfSession(before) : void 0;
       if (agentId === void 0) return;
-      const snapshot = roster.getSnapshot();
       if (snapshot.byId[main] !== void 0 || snapshot.roomsById[main] !== void 0 || agentOfSession(main) !== void 0) return;
       const row = list.byId[main];
       const parent = row?.parentId ?? row?.parentSessionId;

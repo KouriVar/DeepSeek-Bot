@@ -22,6 +22,7 @@ export const NATIVE_SHELL_CSS = `
 .bt-new-chat{display:flex;align-items:center;justify-content:center;gap:8px;min-height:38px;padding:8px 12px;border:.5px solid var(--bt-line-2);border-radius:var(--dsw-radius-md,12px);background:var(--bt-card);color:var(--bt-ink);font:inherit;font-size:14px;cursor:pointer}
 .bt-new-chat:hover{background:var(--bt-hover)}
 .bt-side-list-head{display:flex;align-items:center;justify-content:space-between;padding:0 6px;color:var(--bt-ink-3);font-size:12px;line-height:20px}
+.bt-side-list-title{margin-right:auto}
 .bt-list{gap:4px}
 .bt-row{min-height:36px;padding:7px 8px;gap:8px;border-radius:var(--dsw-radius-md,12px)}
 .bt-row-name{line-height:22px}

@@ -7,7 +7,7 @@ import { themeCss, nativeAccentCss, shellTokens, registry, registerShape, regist
 import { MENTION_ORIGIN, currentPart } from './text.js'
 import { SHELL_CSS, CONVERSATION_CSS, installStyles, installCompiledStyles } from './styles.js'
 import { lookOf } from './mark.js'
-import { TeamSidebar, ConnectPlugins, YouAvatar, AccountLauncher, FooterAccount, BrandMark, BrandName, SIDEBAR_CSS, holdShellShortcuts, openHarnessOnboarding, openHarnessSettings } from './sidebar.js'
+import { TeamSidebar, ConnectPlugins, YouAvatar, AccountLauncher, FooterAccount, SIDEBAR_CSS, holdShellShortcuts, openHarnessOnboarding, openHarnessSettings } from './sidebar.js'
 import { HeaderPill } from './header.js'
 import { ComposerPlus, ComposerVoice, menuIcons } from './composer.js'
 import { CHATS_SOURCE, atSources } from './at-menu.js'
@@ -643,9 +643,7 @@ export function apply(ctx) {
     () => installCompiledStyles(USER_MESSAGE_CSS, 'user-messages'),
     browsers ? () => installCompiledStyles(BROWSER_CSS, 'browser') : null,
     () => installTheme(),
-    () => shadow('sidebar.workspaces', { priority: BOT_PRIORITY, inject: face }, TeamSidebar),
-    () => shadow('sidebar.brand.mark', { priority: BOT_PRIORITY }, BrandMark),
-    () => shadow('sidebar.brand.name', { priority: BOT_PRIORITY }, BrandName),
+    () => shadow('sidebar.workspaces', { priority: BOT_PRIORITY, inject: () => ({ ...face(), nativeHeader: true }) }, TeamSidebar),
     () => shadow('sidebar.footer.action', { id: 'bot-account', order: -200, inject: face }, FooterAccount),
     () => shadow('sidebar.footer.action', { id: 'bot-connect', order: -100, inject: face }, ConnectPlugins),
     () => shadow('settings.trigger', { priority: BOT_PRIORITY }, YouAvatar),
@@ -705,7 +703,8 @@ export function apply(ctx) {
     const sync = () => {
       const list = ctx.sessions.list.getSnapshot()
       const main = Object.values(list.byId ?? {}).find(session => (session?.retainedBy?.mainView ?? 0) > 0)?.id
-      const plain = isAgentSessionId(main)
+      const snapshot = roster.getSnapshot()
+      const plain = isAgentSessionId(main) || (snapshot.ready && main !== undefined && snapshot.byId[main] === undefined && snapshot.roomsById[main] === undefined)
       setPlain(plain)
       if (plain) dropPanels()
       if (main === previous) return
@@ -719,7 +718,6 @@ export function apply(ctx) {
       if (surface.getSnapshot().mode !== 'bot') return
       const agentId = before !== undefined ? agentOfSession(before) : undefined
       if (agentId === undefined) return
-      const snapshot = roster.getSnapshot()
       if (snapshot.byId[main] !== undefined || snapshot.roomsById[main] !== undefined || agentOfSession(main) !== undefined) return
       // Only a Session this jump created joins the Agent: a blank one from the
       // workspace picker, or a fork of a Session the same Agent owns. An existing

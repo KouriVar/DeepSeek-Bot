@@ -266,7 +266,12 @@ export function TeamSidebar(props) {
     actions.openPalette(event.key)
   }
   return h('div', { className: wide ? 'bt-side' : 'bt-side bt-rail', onKeyDown: typeToSearch },
-    wide ? h('div', { className: 'bt-side-top' },
+    props.nativeHeader ? (wide ? h('div', { className: 'bt-side-list-head' },
+      h('span', { className: 'bt-side-list-title' }, t('Bots')),
+      h(UpdateButton, { useUpdate: props.useUpdate, actions }),
+      h('button', { type: 'button', className: 'bt-round', 'aria-label': t('Search'), title: t('Search'), onClick: () => actions.openPalette() }, h(SearchIcon)),
+      h('button', { type: 'button', className: 'bt-round', 'aria-label': t('New…'), title: t('New…'), onClick: () => actions.openNewChat('new') }, h(PlusIcon))) : null)
+      : wide ? h('div', { className: 'bt-side-top' },
       h('div', { className: 'bt-side-brand-row' },
         h('span', { className: 'bt-brand' }, h(BrandMark, { size: 22 }), h(BrandName)),
         h(UpdateButton, { useUpdate: props.useUpdate, actions }),
@@ -542,17 +547,20 @@ function useLandOnMainBot(roster, useSessions, actions) {
     return row ? `${row.id}|${row.blank ? 1 : 0}` : ''
   })
   const lastBot = useRef(null)
+  const nativeSession = useRef(null)
   useEffect(() => {
     if (!roster.ready || !roster.mainBotId) return undefined
     const [id, blank] = mainView.split('|')
     const bot = id === '' ? undefined : roster.byId[id]
     if (bot !== undefined) {
+      nativeSession.current = null
       lastBot.current = { botId: bot.id, sessionId: id }
       if (currentPart(bot) !== id) actions.landOn(bot.id)
       return undefined
     }
     // A DSH Agent Session, blank or not, is a real destination: it stays.
-    if (id !== '' && (roster.roomsById[id] || (actions.isAgentSession?.(id) ?? roster.agentOf[id] !== undefined) || blank !== '1')) {
+    if (id !== '' && (roster.roomsById[id] || (actions.isAgentSession?.(id) ?? roster.agentOf[id] !== undefined) || blank !== '1' || lastBot.current !== null || nativeSession.current === id)) {
+      nativeSession.current = id
       lastBot.current = null
       return undefined
     }
