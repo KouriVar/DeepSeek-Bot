@@ -37,8 +37,6 @@ export const NATIVE_SHELL_CSS = `
 .bt-rail .bt-nav-role{display:none}
 .bt-agent-ava{width:16px;height:20px;background:none;border:0}
 .bt-agent-ava svg{width:16px;height:16px}
-[class*="_footArea"]{grid-template-columns:minmax(0,1fr);gap:4px;padding:8px 2px!important}
-[class*="_footArea"]>[class*="_footerActions"]>div>.bt-connect-wrap,[class*="_footArea"]>[class*="_settingsArea"]{grid-column:1;order:initial;width:100%!important}
 .bt-connect{justify-content:flex-start;gap:8px;padding:7px 8px;border:0;background:none;border-radius:var(--dsw-radius-md,12px);box-sizing:border-box;font:inherit;font-size:14px;line-height:22px}
 .bt-connect svg{width:16px;height:16px}
 .bt-connect:hover{background:var(--bt-hover)}

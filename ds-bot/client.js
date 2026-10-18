@@ -1224,8 +1224,8 @@ function bodyOf(def, paint, flat = false) {
     return "";
   }
 }
-var eyeMarkup = ([cx, cy, w, h37, tilt]) => `<g transform="translate(${cx} ${cy}) rotate(${tilt})"><rect class="bt-eye" x="${-w / 2}" y="${-h37 / 2}" width="${w}" height="${h37}" rx="${w / 2}"/></g>`;
-var happyEyeMarkup = ([cx, cy, w, h37, tilt]) => `<g transform="translate(${cx} ${cy}) rotate(${tilt})"><path class="bt-eye-happy" opacity="0" d="M${-w * 0.62} ${h37 * 0.14}Q0 ${-h37 * 0.42} ${w * 0.62} ${h37 * 0.14}" fill="none" stroke="#000" stroke-width="${w * 0.5}" stroke-linecap="round"/></g>`;
+var eyeMarkup = ([cx, cy, w, h38, tilt]) => `<g transform="translate(${cx} ${cy}) rotate(${tilt})"><rect class="bt-eye" x="${-w / 2}" y="${-h38 / 2}" width="${w}" height="${h38}" rx="${w / 2}"/></g>`;
+var happyEyeMarkup = ([cx, cy, w, h38, tilt]) => `<g transform="translate(${cx} ${cy}) rotate(${tilt})"><path class="bt-eye-happy" opacity="0" d="M${-w * 0.62} ${h38 * 0.14}Q0 ${-h38 * 0.42} ${w * 0.62} ${h38 * 0.14}" fill="none" stroke="#000" stroke-width="${w * 0.5}" stroke-linecap="round"/></g>`;
 var maskBox = (size) => `maskUnits="userSpaceOnUse" x="${-size}" y="${-size}" width="${size * 3}" height="${size * 3}"`;
 var holes = (def, eyes) => `<rect x="${-def.size}" y="${-def.size}" width="${def.size * 3}" height="${def.size * 3}" fill="#fff"/>${eyes}`;
 var MASK_ID = "%MASK%";
@@ -1867,12 +1867,12 @@ function liveSprings(apply2) {
     const dt = Math.min(0.5, Math.max(1e-3, (now - last) / 1e3));
     last = now;
     const steps = Math.ceil(dt * 240);
-    const h37 = dt / steps;
+    const h38 = dt / steps;
     let moving = false;
     for (const value of values.values()) {
       for (let index = 0; index < steps; index += 1) {
-        value.v += (-value.k * (value.x - value.to) - value.c * value.v) * h37;
-        value.x += value.v * h37;
+        value.v += (-value.k * (value.x - value.to) - value.c * value.v) * h38;
+        value.x += value.v * h38;
       }
       if (Math.abs(value.x - value.to) < 0.05 && Math.abs(value.v) < 1) {
         value.x = value.to;
@@ -2042,7 +2042,6 @@ function useLinger(value, ms) {
 }
 
 // src/client/styles.js
-var SKIN_FOOT = ':is(div,footer):not([class*="_footArea"]):has(> div > [data-slot="sidebar.footer.action"] > .bt-connect-wrap)';
 var SHELL_CSS = `
 body{--bt-ink:#141414;--bt-danger:#e02135;--bt-ink-2:rgba(20,20,20,.6);--bt-ink-3:rgba(20,20,20,.36);--bt-bubble:#eeeeee;--bt-sidebar:#f7f7f7;--bt-main:#fcfcfc;--bt-line:rgba(20,20,20,.08);--bt-line-2:rgba(20,20,20,.15);--bt-line-weak:rgba(20,20,20,.1);--bt-hover:rgba(119,119,119,.09);--bt-active:rgba(119,119,119,.17);--bt-card:#ffffff;--bt-accent:#4d6bfe;--bt-green:#00c972;--bt-star:#ff9800;--bt-user:#070707;--bt-user-ink:#fcfcfc;--bt-tag-bg:rgba(20,20,20,.06);--bt-tag-ink:rgba(20,20,20,.56)}
 body[data-ds-dark-theme]{--bt-ink:#f2f2f2;--bt-ink-2:rgba(242,242,242,.6);--bt-ink-3:rgba(242,242,242,.36);--bt-bubble:#262626;--bt-sidebar:#1b1b1b;--bt-main:#141414;--bt-line:rgba(255,255,255,.08);--bt-line-2:rgba(255,255,255,.15);--bt-line-weak:rgba(255,255,255,.1);--bt-hover:rgba(160,160,160,.12);--bt-active:rgba(160,160,160,.2);--bt-card:#1f1f1f;--bt-user:#f2f2f2;--bt-user-ink:#141414;--bt-tag-bg:rgba(255,255,255,.09);--bt-tag-ink:rgba(242,242,242,.62)}
@@ -2537,23 +2536,7 @@ button.bt-set-row:hover{background:var(--bt-hover)}
 
 /* Shell chrome reshaped for the team view. Selectors use stable data attributes where the
    shell offers them and CSS-module name suffixes elsewhere. */
-nav[class*="_panelList"]{display:none!important}
 html[data-windows-titlebar] .bt-side-collapse,html[data-platform=darwin] .bt-side-collapse{display:none}
-/* The footer ends in the Bot row: the whale's settings seat, then Connect plugins. Every
-   other plugin's entry takes a whole row above it, in the shell's order, so none of them
-   squeezes the Bot row. */
-[class*="_footArea"]{grid-template-columns:auto minmax(0,1fr);grid-auto-flow:row dense;align-items:center;gap:4px 9px;padding:8px 6px 6px!important}
-/* DSH hides the footer of a collapsed sidebar under a Windows title bar; the grid
-   stays out of that one place. */
-html:not([data-windows-titlebar]) [class*="_footArea"],:not([class*="_collapsed"])>[class*="_footArea"]{display:grid!important}
-[class*="_footArea"]>[class*="_footerActions"],[class*="_footArea"]>[class*="_footerActions"]>div{display:contents!important}
-[class*="_footArea"]>[class*="_footerActions"]>div>*{grid-column:1/-1}
-[class*="_footArea"]>[class*="_footerActions"]>div>.bt-connect-wrap{grid-column:2;order:1}
-[class*="_footArea"]>[class*="_settingsArea"]{grid-column:1;order:1;width:auto!important}
-[class*="_footArea"] button[aria-label="Settings"]{width:auto!important;padding:0!important;background:none!important;border-radius:50%!important;height:auto!important}
-${SKIN_FOOT}{display:flex!important;flex-direction:row!important;align-items:center!important;gap:9px!important}
-${SKIN_FOOT}>div:has(> [data-slot="sidebar.footer.action"]){display:flex!important;align-items:center!important;flex:1 1 auto!important;min-width:0!important}
-${SKIN_FOOT}>div:has(> [data-slot="sidebar.settings"]){order:-1!important;flex:none!important;width:auto!important}
 [class*="_widthHandle"]{display:none!important}
 
 .bt-voice-pane{flex-direction:column;align-items:center;justify-content:center;animation:bt-fade .2s ease-out}
@@ -5620,6 +5603,14 @@ function YouAvatar() {
 var openShellSettings = null;
 var openShellOnboarding = null;
 var shellShortcuts = null;
+function holdHarnessNavigation({ openSettings, openOnboarding }) {
+  if (openSettings) openShellSettings = openSettings;
+  if (openOnboarding) openShellOnboarding = openOnboarding;
+  return () => {
+    if (openShellSettings === openSettings) openShellSettings = null;
+    if (openShellOnboarding === openOnboarding) openShellOnboarding = null;
+  };
+}
 function holdShellShortcuts(shortcuts) {
   shellShortcuts = shortcuts;
   return () => {
@@ -13743,12 +13734,60 @@ var import_dsh_client_ui_primitives2 = require("@deepseek-ai/dsh-client-ui-primi
 function BotPanelIcon({ size }) {
   return (0, import_react37.createElement)(import_dsh_client_ui_primitives2.IconAgentPresetOutlineRegular, { size });
 }
-function BotEntry({ actions }) {
+function ChatPanelIcon({ size }) {
+  return (0, import_react37.createElement)(import_dsh_client_ui_primitives2.IconNewChatOutlineRegular, { size });
+}
+function BotEntry({ actions, useSurface }) {
+  const mode = useSurface((state) => state.mode);
   (0, import_react37.useEffect)(() => {
     actions.selectPanel(null);
-    actions.setSurface("bot");
+    actions.setSurface(mode === "bot" ? "agent" : "bot");
   }, [actions]);
   return null;
+}
+
+// src/client/native-account.js
+var import_react38 = require("react");
+function NativeAccountLauncher({ NativeLauncher, openBotSettings, ...props }) {
+  (0, import_react38.useEffect)(() => holdHarnessNavigation(props), [props.openSettings, props.openOnboarding]);
+  return (0, import_react38.createElement)(NativeLauncher, { ...props, openSettings: openBotSettings });
+}
+function installNativeAccount(ctx, actions, face) {
+  return ctx.slots.inject("settings.launcher", () => {
+    let current;
+    let installed = false;
+    let updating = false;
+    let release = () => {
+    };
+    const sync = () => {
+      if (updating) return;
+      const entries2 = ctx.slots.entries("settings.launcher");
+      const original = entries2.filter((entry) => entry.component !== NativeAccountLauncher && entry.component !== AccountLauncher).sort((a, b) => (a.options.priority ?? 0) - (b.options.priority ?? 0))[0];
+      if (installed && original === current) return;
+      updating = true;
+      try {
+        current = original;
+        installed = true;
+        release();
+        const options = { name: "settings.launcher", priority: freePriority(ctx.slots.entries("settings.launcher"), { priority: -100 }) };
+        release = ctx.slots.register(original ? {
+          ...options,
+          ...original.locale ? { locale: original.locale } : {},
+          ...original.store ? { store: original.store } : {},
+          ...original.children ? { children: original.children } : {},
+          inject: (...args) => ({ ...original.inject?.(...args), NativeLauncher: original.component, openBotSettings: () => actions.openSettings("general") })
+        } : { ...options, inject: face }, original ? NativeAccountLauncher : AccountLauncher);
+      } finally {
+        updating = false;
+      }
+    };
+    const off = ctx.slots.subscribe("settings.launcher", sync);
+    sync();
+    return () => {
+      off();
+      release();
+    };
+  });
 }
 
 // src/client/native-theme.js
@@ -13788,8 +13827,6 @@ var NATIVE_SHELL_CSS = `
 .bt-rail .bt-nav-role{display:none}
 .bt-agent-ava{width:16px;height:20px;background:none;border:0}
 .bt-agent-ava svg{width:16px;height:16px}
-[class*="_footArea"]{grid-template-columns:minmax(0,1fr);gap:4px;padding:8px 2px!important}
-[class*="_footArea"]>[class*="_footerActions"]>div>.bt-connect-wrap,[class*="_footArea"]>[class*="_settingsArea"]{grid-column:1;order:initial;width:100%!important}
 .bt-connect{justify-content:flex-start;gap:8px;padding:7px 8px;border:0;background:none;border-radius:var(--dsw-radius-md,12px);box-sizing:border-box;font:inherit;font-size:14px;line-height:22px}
 .bt-connect svg{width:16px;height:16px}
 .bt-connect:hover{background:var(--bt-hover)}
@@ -14432,12 +14469,7 @@ function apply(ctx) {
     browsers ? () => installCompiledStyles(BROWSER_CSS, "browser") : null,
     () => installTheme(),
     () => shadow("sidebar.workspaces", { priority: BOT_PRIORITY, inject: () => ({ ...face(), nativeHeader: true }) }, TeamSidebar),
-    () => shadow("sidebar.footer.action", { id: "bot-account", order: -200, inject: face }, FooterAccount),
-    () => shadow("sidebar.footer.action", { id: "bot-connect", order: -100, inject: face }, ConnectPlugins),
-    () => shadow("settings.trigger", { priority: BOT_PRIORITY }, YouAvatar),
-    // The whale wins the seat over a shell account plugin's own launcher (the
-    // Desktop's "··· More"), which comes back in Agent mode.
-    () => shadow("settings.launcher", { priority: BOT_PRIORITY, inject: face }, AccountLauncher),
+    () => installNativeAccount(ctx, actions, face),
     () => shadow("shell.overlay", { id: "bot", order: 50, inject: face }, Overlays),
     () => shadow("shell.overlay", { id: "bot-signin", order: 55, inject: face }, DeepSeekSignIn),
     () => shadow("shell.overlay", { id: "bot-toast", order: 60, inject: face }, ErrorToast)
@@ -14477,8 +14509,29 @@ function apply(ctx) {
     () => shadow("conversation.input.dock", { id: "bot-question", order: -100, inject: face }, QuestionDock),
     () => shadow("conversation.input.dock", { id: "bot-secret", order: -90, inject: face }, SecretDock)
   ];
-  shadow("main", { key: "ds-bot", inject: () => ({ actions }) }, BotEntry);
-  shadow("sidebar.panellist", { id: "ds-bot", order: 20, label: () => t("DS Bot") }, BotPanelIcon);
+  shadow("main", { key: "ds-bot", inject: face }, BotEntry);
+  ctx.effect(() => {
+    let mode;
+    let release = () => {
+    };
+    const sync = () => {
+      const next = surface.getSnapshot().mode;
+      if (next === mode) return;
+      mode = next;
+      release();
+      release = shadow("sidebar.panellist", {
+        id: "ds-bot",
+        order: 20,
+        label: mode === "bot" ? "Halfsignal Chat" : "Halfsignal Bot"
+      }, mode === "bot" ? ChatPanelIcon : BotPanelIcon);
+    };
+    sync();
+    const off = surface.subscribe(sync);
+    return () => {
+      off();
+      release();
+    };
+  }, "ds-bot: surface navigation");
   ctx.effect(() => {
     let previous;
     const sync = () => {

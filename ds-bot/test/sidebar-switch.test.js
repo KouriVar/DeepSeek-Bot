@@ -62,7 +62,7 @@ function shell({ platform, collapsed }) {
         <div class="x_logoRow">${collapsed ? '' : '<button class="x_brand x_wide"></button>'}${darwin ? '' : toggle}</div>
         <div class="x_newSession"></div>
         <div class="team"></div>
-        <div class="x_footArea"><span class="bt-foot-account"></span></div>
+        <div class="x_footArea"></div>
       </div>
     </div></body></html>`
   const { document } = new JSDOM(html).window
@@ -131,14 +131,12 @@ test('the team view lays out the shell footer but never decides whether it shows
   assert.deepEqual(deciding.map(rule => rule.selector), [])
 })
 
-// 公开#164: the footer's grid gives other plugins' entries rows of their own; it holds
-// wherever the shell shows the footer, and stays out of the one place it hides it.
-test('the shell footer is a grid wherever the shell shows it', () => {
+test('the native account footer keeps its shell geometry in both modes', () => {
   for (const platform of ['web', 'windows', 'mac']) {
     for (const collapsed of [false, true]) {
       const foot = shell({ platform, collapsed }).document.querySelector('.x_footArea')
-      const grid = rules.some(rule => foot.matches(rule.selector) && /(^|;)display:grid/.test(rule.body))
-      assert.equal(grid, !(platform === 'windows' && collapsed), `${platform} ${collapsed ? 'collapsed' : 'open'}`)
+      const changed = rules.filter(rule => foot.matches(rule.selector) && /(^|;)(display|padding|gap|grid-template-columns):/.test(rule.body))
+      assert.deepEqual(changed, [], `${platform} ${collapsed ? 'collapsed' : 'open'}`)
     }
   }
 })

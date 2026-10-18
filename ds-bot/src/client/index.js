@@ -7,7 +7,7 @@ import { themeCss, nativeAccentCss, shellTokens, registry, registerShape, regist
 import { MENTION_ORIGIN, currentPart } from './text.js'
 import { SHELL_CSS, CONVERSATION_CSS, installStyles, installCompiledStyles } from './styles.js'
 import { lookOf } from './mark.js'
-import { TeamSidebar, ConnectPlugins, YouAvatar, AccountLauncher, FooterAccount, SIDEBAR_CSS, holdShellShortcuts, openHarnessOnboarding, openHarnessSettings } from './sidebar.js'
+import { TeamSidebar, SIDEBAR_CSS, holdShellShortcuts, openHarnessOnboarding, openHarnessSettings } from './sidebar.js'
 import { HeaderPill } from './header.js'
 import { ComposerPlus, ComposerVoice, menuIcons } from './composer.js'
 import { CHATS_SOURCE, atSources } from './at-menu.js'
@@ -35,7 +35,8 @@ import { ABOUT_CSS } from './about.js'
 import { MEMBER_CSS, MemberDock } from './member-status.js'
 import { USER_MESSAGE_CSS, UserMessageCell, canDrawUserMessages } from './user-message.js'
 import { noticeApprovals } from './approval-notices.js'
-import { BotEntry, BotPanelIcon } from './bot-entry.js'
+import { BotEntry, BotPanelIcon, ChatPanelIcon } from './bot-entry.js'
+import { installNativeAccount } from './native-account.js'
 import { NATIVE_TOKENS, NATIVE_SHELL_CSS, NATIVE_CONVERSATION_CSS } from './native-theme.js'
 
 export const inject = ['sessions', 'uiWorkspace', 'uiConversation', 'slots', 'theme', 'layout']
@@ -644,12 +645,7 @@ export function apply(ctx) {
     browsers ? () => installCompiledStyles(BROWSER_CSS, 'browser') : null,
     () => installTheme(),
     () => shadow('sidebar.workspaces', { priority: BOT_PRIORITY, inject: () => ({ ...face(), nativeHeader: true }) }, TeamSidebar),
-    () => shadow('sidebar.footer.action', { id: 'bot-account', order: -200, inject: face }, FooterAccount),
-    () => shadow('sidebar.footer.action', { id: 'bot-connect', order: -100, inject: face }, ConnectPlugins),
-    () => shadow('settings.trigger', { priority: BOT_PRIORITY }, YouAvatar),
-    // The whale wins the seat over a shell account plugin's own launcher (the
-    // Desktop's "··· More"), which comes back in Agent mode.
-    () => shadow('settings.launcher', { priority: BOT_PRIORITY, inject: face }, AccountLauncher),
+    () => installNativeAccount(ctx, actions, face),
     () => shadow('shell.overlay', { id: 'bot', order: 50, inject: face }, Overlays),
     () => shadow('shell.overlay', { id: 'bot-signin', order: 55, inject: face }, DeepSeekSignIn),
     () => shadow('shell.overlay', { id: 'bot-toast', order: 60, inject: face }, ErrorToast),
@@ -691,8 +687,23 @@ export function apply(ctx) {
   ]
   // Keep the entry outside both surface groups so Agent mode can return to Bots.
   // The built-in Plugins and Scheduled tasks rows have orders 0 and 10.
-  shadow('main', { key: 'ds-bot', inject: () => ({ actions }) }, BotEntry)
-  shadow('sidebar.panellist', { id: 'ds-bot', order: 20, label: () => t('DS Bot') }, BotPanelIcon)
+  shadow('main', { key: 'ds-bot', inject: face }, BotEntry)
+  ctx.effect(() => {
+    let mode
+    let release = () => {}
+    const sync = () => {
+      const next = surface.getSnapshot().mode
+      if (next === mode) return
+      mode = next
+      release()
+      release = shadow('sidebar.panellist', {
+        id: 'ds-bot', order: 20, label: mode === 'bot' ? 'Halfsignal Chat' : 'Halfsignal Bot',
+      }, mode === 'bot' ? ChatPanelIcon : BotPanelIcon)
+    }
+    sync()
+    const off = surface.subscribe(sync)
+    return () => { off(); release() }
+  }, 'ds-bot: surface navigation')
 
   // The main view decides `plain`: a DSH Agent Session keeps the Bot shell but
   // withdraws the conversation replacements, so the native dsh page shows. A jump

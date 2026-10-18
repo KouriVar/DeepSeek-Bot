@@ -421,6 +421,15 @@ let openShellSettings = null
 let openShellOnboarding = null
 let shellShortcuts = null
 
+export function holdHarnessNavigation({ openSettings, openOnboarding }) {
+  if (openSettings) openShellSettings = openSettings
+  if (openOnboarding) openShellOnboarding = openOnboarding
+  return () => {
+    if (openShellSettings === openSettings) openShellSettings = null
+    if (openShellOnboarding === openOnboarding) openShellOnboarding = null
+  }
+}
+
 export function holdShellShortcuts(shortcuts) {
   shellShortcuts = shortcuts
   return () => { if (shellShortcuts === shortcuts) shellShortcuts = null }
