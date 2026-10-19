@@ -4,6 +4,7 @@ import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { MAX_AVATAR_IMAGE, ROOM_MAX_MEMBERS, ROOM_MODES, ROOM_NAME_MAX, ROOM_NOTICE_MAX } from './constants.js'
 import { currentColor, isColor, normalize, unquote } from './text.js'
+import { validFace } from '../shared/avatar.js'
 import { nameProblem } from '../shared/mentions.js'
 
 export function install(rt) {
@@ -61,6 +62,7 @@ export function install(rt) {
   function cleanAvatar(input) {
     if (input === null || typeof input !== 'object') return undefined
     const avatar = {}
+    if (validFace(input.face)) avatar.face = input.face
     if (typeof input.shape === 'string' && /^[a-z][\w-]{0,31}$/.test(input.shape)) avatar.shape = input.shape
     if (typeof input.image === 'string') {
       if (!/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(input.image)) throw new Error('Avatar images must be PNG, JPEG, WebP, or GIF')

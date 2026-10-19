@@ -15,7 +15,7 @@ export function BotToolView(props) {
 export function coordinationCss(roster, sessionId) {
   const hidden = (roster.exchangeTurns?.[sessionId] ?? []).filter(turn => Number.isSafeInteger(turn) && turn >= 0)
   const hiddenCss = hidden.map(turn => `[data-chat-turn="${turn}"]:not([data-chat-flow-kind="turn-trigger"]){display:none!important}`).join('')
-  return hiddenCss + (roster.roomsById[sessionId] ? '[data-chat-flow-kind="assistant-step"]{display:none!important}' : '')
+  return hiddenCss + (roster.roomsById[sessionId] ? '[data-chat-flow-kind="assistant-step"],[data-chat-flow-kind="turn-process"]{display:none!important}[data-step-process]:has(.bt-group-replies)>div:first-child{display:none}' : '')
 }
 
 export function NativeBotDetails({ sessionId, actions, useUi, useRoster }) {

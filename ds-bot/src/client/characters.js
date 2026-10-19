@@ -1,3 +1,5 @@
+import { COMPANIONS, COMPANION_SHAPES, companionFace } from './companion-shapes.js'
+import { validFace } from '../shared/avatar.js'
 import { INKS, GRADIENTS, isHex, inkFill } from './inks.js'
 
 // -------------------------------------------------------------------------
@@ -31,7 +33,7 @@ export const CHARACTERS = {
 }
 // The picker shows every character at once, six to a row. A Bot with no choice gets
 // one of the friendliest seven; the whale is left out so it stays the Main Bot's.
-export const PICKER_SHAPES = Object.keys(CHARACTERS)
+export const PICKER_SHAPES = [...COMPANION_SHAPES, ...Object.keys(CHARACTERS)]
 export const PICKER_COLUMNS = 6
 export const DEFAULT_SHAPES = ['star', 'moon', 'gumdrop', 'peanut', 'bunny', 'kitty', 'acorn']
 export const FALLBACK_SHAPE = 'gumdrop'
@@ -70,13 +72,14 @@ export function lookOf(bot) {
   return {
     shape: hasShape(avatar.shape) ? avatar.shape : bot?.id ? defaultShape(String(bot.id)) : FALLBACK_SHAPE,
     image: avatar.image,
+    ...(validFace(avatar.face) ? { face: avatar.face } : {}),
     color: colorOf(bot),
   }
 }
 
 // Registered shapes join the characters: `body(paint)` returns SVG markup in a
 // `size` box and `eyes` lists the two capsules.
-export const SHAPES = {}
+export const SHAPES = { ...COMPANIONS }
 for (const [id, character] of Object.entries(CHARACTERS)) {
   const layers = [
     ...(character.paints ?? []).map(([d, fill, opacity]) => `<path d="${d}" fill="${fill}" fill-opacity="${opacity}"/>`),
@@ -94,6 +97,15 @@ export function bodyOf(def, paint, flat = false) {
   try { return def.body(paint) } catch { return '' }
 }
 const eyeMarkup = ([cx, cy, w, h, tilt]) => `<g transform="translate(${cx} ${cy}) rotate(${tilt})"><rect class="bt-eye" x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" rx="${w / 2}"/></g>`
+const expressiveEye = (eye, face, index) => {
+  const [cx, cy, w, height, tilt] = eye
+  if (face === 'calm' || (face === 'wink' && index === 0)) return eyeMarkup(eye)
+  const arc = face === 'cheerful' || face === 'wink'
+  const figure = arc ? `<path class="bt-eye" d="M${-w * .65} ${height * .12}Q0 ${-height * .35} ${w * .65} ${height * .12}" fill="none" stroke="#000" stroke-width="${w * .48}" stroke-linecap="round"/>`
+    : face === 'sleepy' ? `<path class="bt-eye" d="M${-w * .6} 0L${w * .6} ${height * .06}" fill="none" stroke="#000" stroke-width="${w * .42}" stroke-linecap="round"/>`
+      : `<ellipse class="bt-eye" rx="${w * (face === 'bright' ? .8 : .5)}" ry="${height * (face === 'curious' && index === 0 ? .3 : .5)}"/>`
+  return `<g transform="translate(${cx} ${cy}) rotate(${tilt})">${figure}</g>`
+}
 // A closed, happy eye (an upturned arc) in the same spot, shown while the mark is petted.
 const happyEyeMarkup = ([cx, cy, w, h, tilt]) => `<g transform="translate(${cx} ${cy}) rotate(${tilt})"><path class="bt-eye-happy" opacity="0" d="M${-w * 0.62} ${h * 0.14}Q0 ${-h * 0.42} ${w * 0.62} ${h * 0.14}" fill="none" stroke="#000" stroke-width="${w * 0.5}" stroke-linecap="round"/></g>`
 // A mask covering three boxes, so a bob or squash never clips the body at the edge.
@@ -106,18 +118,24 @@ export const MASK_ID = '%MASK%'
 let markSerial = 0
 export const nextMarkSerial = () => (markSerial += 1)
 export const markupCache = new Map()
-export function characterMarkup(shape, color) {
-  const key = `${shape}|${color}`
+export function characterMarkup(shape, color, face = 'calm') {
+  const key = `${shape}|${color}|${face}`
   let markup = markupCache.get(key)
   if (markup === undefined) {
     const def = shapeOf(shape)
     // The eyes sit in the mask, untransformed by their placement, so CSS blinks and
     // glances never replace where they sit.
-    const eyes = `<g class="bt-gaze"><g class="bt-eyes" fill="#000">${def.eyes.map(eyeMarkup).join('')}${def.eyes.map(happyEyeMarkup).join('')}</g></g>`
+    const eyes = `<g class="bt-gaze"><g class="bt-eyes" fill="#000">${def.eyes.map((eye, index) => expressiveEye(eye, face, index)).join('')}${def.eyes.map(happyEyeMarkup).join('')}</g></g>`
     const stops = GRADIENTS[color]
     const gradient = stops ? `<linearGradient id="${MASK_ID}g" gradientUnits="userSpaceOnUse" x1="18" y1="10" x2="78" y2="92">${stops.map(([offset, value]) => `<stop offset="${offset}" stop-color="${value}"/>`).join('')}</linearGradient>` : ''
     const body = `<g mask="url(#${MASK_ID})">${bodyOf(def, stops ? `url(#${MASK_ID}g)` : inkFill(color))}</g>`
     markup = `<defs>${gradient}<mask id="${MASK_ID}" ${maskBox(def.size)}>${holes(def, eyes)}</mask></defs><g class="bt-b">${def.wrap ? `<g transform="${def.wrap}">${body}</g>` : body}</g>`
+    if (def.companion) {
+      const paint = stops ? `url(#${MASK_ID}g)` : inkFill(color)
+      const faceInk = color === 'black' ? 'var(--bt-main)' : `color-mix(in srgb,${inkFill(color)} 22%,#111820)`
+      markup = `<defs>${gradient}</defs><g class="bt-b"><path d="${def.path}" fill="${paint}"/><path d="${def.path}" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="1.1"/><g color="${faceInk}" fill="currentColor">${companionFace(face)}</g></g>`
+    }
+    markup = markup.replace('<g class="bt-b">', '<g class="bt-gesture"><g class="bt-b">') + '</g>'
     markupCache.set(key, markup)
   }
   return markup

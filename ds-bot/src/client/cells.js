@@ -2,7 +2,7 @@ import { createElement as h, Fragment, useEffect, useLayoutEffect, useMemo, useR
 import { createPortal } from 'react-dom'
 import { MarkdownText } from './dsh-primitives.js'
 import { linkMentions, mentionTarget, dayLabel, contentText, stripHeader, isHiddenTurn, isRelayContext, relaysBefore, relayPart, commRunOf, toolName, toolArgs, reminderPrompts, elapsedLabel } from './text.js'
-import { SmileIcon, ReplyIcon, DotsIcon, CheckIcon, DownloadIcon, CopyIcon, MemoryIcon } from './icons.js'
+import { SmileIcon, ReplyIcon, DotsIcon, CheckIcon, DownloadIcon, CopyIcon, MemoryIcon, ClockIcon, ChevronRightIcon } from './icons.js'
 import { toolState, BotMark, RoomAvatar } from './mark.js'
 import { AnsweredCell, SettledQuestion, PendingQuestion } from './questions.js'
 import { SecretToolCell } from './secret-card.js'
@@ -202,12 +202,13 @@ function EventLine({ prefix, bots, joiner = t('and'), onOpen, whole = false }) {
 }
 
 // One Bot message inside a group chat: avatar, name (with its group role), bubble.
-function GroupMessage({ bot, text, texts = [text], room, roster, actions, msgKey, useUi, whole, continuation = false }) {
+function GroupMessage({ bot, text, texts = [text], room, roster, actions, msgKey, useUi, whole, continuation = false, at }) {
   const lead = h('button', { type: 'button', className: 'bt-lead', 'aria-label': t("Open {name}'s chat", { name: bot.name }), onClick: () => actions.openSession(bot.id) },
-    h(BotMark, { bot, size: 24 }))
+    h(BotMark, { bot, size: 24, live: !bot.avatar?.image }))
   return h('div', { className: 'bt-group-msg', 'data-continuation': continuation || undefined }, continuation ? null : lead,
     continuation ? null : h('span', { className: 'bt-group-name' }, bot.name,
-      room?.admin === bot.id ? h('span', { className: 'bt-group-role' }, t('Admin')) : null),
+      room?.admin === bot.id ? h('span', { className: 'bt-group-role' }, t('Admin')) : null,
+      typeof at === 'number' && Number.isFinite(new Date(at).getTime()) ? h('time', { className: 'bt-group-time', dateTime: new Date(at).toISOString() }, new Intl.DateTimeFormat(dateLocale(), { hour: '2-digit', minute: '2-digit' }).format(at)) : null),
     h(Bubbles, { texts, roster, selfId: bot.id, actions, sessionId: room?.id, msgKey, useUi, whole }))
 }
 
@@ -702,24 +703,24 @@ function GroupReplies({ sessionId, callId, done, content, roster, actions, useUi
       if (reply.kind === 'cut') {
         return h('div', { key: `${reply.botId}-${index}`, className: 'bt-event' }, t('{name} was cut off by a restart again and stopped', { name: bot.name }))
       }
-      if (reply.kind === 'approval' || reply.kind === 'working') {
-        return h('div', { key: `${reply.botId}-${index}`, className: 'bt-event' },
-          h('button', { type: 'button', className: 'bt-event-whole', onClick: () => actions.showDetails(sessionId) },
-            h('span', { className: 'bt-event-name' }, t(reply.kind === 'working' ? '{name} started on it' : '{name} paused for your approval', { name: bot.name }))))
+      if (reply.kind === 'approval' || reply.kind === 'working' || reply.kind === 'done') {
+        return h('button', { key: `${reply.botId}-${index}`, type: 'button', className: 'bt-work-card', 'data-status': reply.kind,
+          onClick: () => reply.kind === 'approval' ? actions.showDetails(sessionId) : actions.openSession(bot.id),
+        }, h(BotMark, { bot, size: 24 }),
+        h('span', { className: 'bt-work-copy' }, h('strong', null, bot.name),
+          h('span', null, t(reply.kind === 'working' ? 'Started work' : reply.kind === 'done' ? 'Finished work' : 'Waiting for your approval'))),
+        h('span', { className: 'bt-work-state' }, h(reply.kind === 'done' ? CheckIcon : ClockIcon)), h(ChevronRightIcon))
       }
       if (reply.kind === 'stopped') {
         return h('div', { key: `${reply.botId}-${index}`, className: 'bt-event' }, t("You stopped {name}'s work", { name: bot.name }))
       }
-      if (reply.kind === 'done') {
-        return h('div', { key: `${reply.botId}-${index}`, className: 'bt-event' }, t('{name} finished its work', { name: bot.name }))
-      }
-      return h(GroupMessage, { key: `${reply.botId}-${index}`, bot, texts, continuation, room, roster, actions, msgKey: callId ? `${sessionId}:${callId}:${index}` : undefined, useUi })
+      return h(GroupMessage, { key: `${reply.botId}-${index}`, bot, texts, continuation, at: reply.time, room, roster, actions, msgKey: callId ? `${sessionId}:${callId}:${index}` : undefined, useUi })
     }),
     pending.map((id) => {
       const bot = roster.byId[id]
       if (!bot) return null
       return h('div', { key: `pending-${id}`, className: 'bt-activity' },
-        h(BotMark, { bot: bot, size: 24, state: speakerTool ? toolState(speakerTool) : 'thinking' }),
+        h(BotMark, { bot: bot, size: 24, live: true, state: speakerTool ? toolState(speakerTool) : 'thinking' }),
         h(Shimmer, null, speakerDoing ? `${bot.name} · ${speakerDoing}…` : t('{name} is typing…', { name: bot.name })))
     }))
 }

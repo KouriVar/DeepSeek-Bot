@@ -5,6 +5,17 @@
 export const NAMESPACE = 'ds-bot'
 
 const ZH = {
+  'Face': '表情', 'Color': '颜色', 'Shape': '形状',
+  'Character face': '头像表情',
+  'Face: calm': '平静', 'Face: cheerful': '开心', 'Face: sleepy': '慵懒', 'Face: wink': '眨眼', 'Face: curious': '好奇', 'Face: bright': '亮晶晶',
+  'Orb': '圆球', 'Pebble': '软方', 'Prism': '棱镜', 'Bloom': '花朵',
+  'Original characters': '原有角色',
+  'Play with this Bot': '和小机器人互动',
+  'A little companion, with a job of its own.': '一个有自己任务的小伙伴。',
+  'Preview animation': '预览动效', 'At ease': '待机', 'Needs you': '等你', 'Has news': '有新消息', 'Resting': '休息', 'Looking out': '观察',
+  'Try the states. Move closer, or give it a gentle tap.': '切换状态试试；靠近它，或轻轻点一下。',
+  'Started work': '已经开始处理', 'Finished work': '已完成任务',
+
   Plugins: '插件',
   // Shared
   'Main Bot': '主 Bot',

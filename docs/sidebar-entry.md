@@ -165,3 +165,44 @@ mock-backed host smoke passed all 41 steps. Browser checks confirm Chat/Bot
 round-trip navigation, retained 24px round avatars and body alignment, a 12px
 header/body gap and correctly owned style tags. The tracked-source scan reports
 zero required fixes.
+
+## Companion characters and group reading layout
+
+Version `0.1.7-halfsignal.11` adds five front-facing geometric companions, ten
+pastel colors and six expressions to the existing avatar editor. Original
+characters and uploaded photos remain available. New Bots start on the companion
+palette; existing identities are not migrated. Expression choices are validated
+on the host and survive creation, editing and duplication.
+
+The character preview supports idle, work, attention, news, rest and lookout
+states without launching work. Body, gaze, blinks and reactions move separately;
+clicks and keyboard activation produce a short reaction. Per-character random
+streams stagger blinks and small gestures. Motion pauses offscreen, respects the
+system's reduced-motion setting and releases animations, timers and listeners on
+unmount. Sidebar rows show the Bot's avatar and role again.
+
+Group messages use a 24px avatar column, a 12px gutter, a sender/role/time header
+and a body aligned under the sender. Paragraph spacing stays on the native
+rhythm. Repeated coordinator process labels are hidden only in groups; actual
+tool views and the native trajectory remain available. Work and approval events
+become small cards opening the Bot's chat or the group's approval details.
+
+Visual and interaction reference: [Kuvo Code Bots](https://www.kuvo.run/code/docs/bots/).
+This is an independent implementation for the Harness plugin, using its existing
+SVG renderer and theme tokens. No Kuvo source code, graphics or runtime is
+included or relicensed. Its native implementation was read as a reference; its
+noncommercial license does not become part of this Apache-licensed fork.
+
+Validation: 739 plugin tests passed (2 skipped), all 25 standalone-app tests
+passed, lint and generated-client checks passed, and all 41 isolated host smoke
+steps passed. Browser checks cover state, shape, color and expression changes,
+click reactions, keyboard support, and an actual Bot creation followed by a page
+reload confirming its saved shape, color and expression. Group bounds confirm
+24px avatars and shared sender/body x coordinates. Captured the running work
+animation and reviewed a contact sheet against the supplied character reference.
+
+Installed `0.1.7-halfsignal.11` through the official desktop-profile plugin CLI.
+The real macOS App confirms the revised group layout, deduplicated sidebar role
+labels, and the companion editor with shape, color and work-state controls.
+Existing team identities and conversations were preserved; no production Bot was
+created or messaged during validation.

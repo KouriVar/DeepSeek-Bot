@@ -763,3 +763,16 @@ test('list_models names the thinking levels of the models a Bot runs on', async 
   assert.match(result, /deepseek\/deepseek-v4-flash.*thinking: low, high \(default: high\)/)
   assert.doesNotMatch(result.split('\n').find(line => line.includes('deepseek/plain')), /thinking/)
 })
+
+test('avatar expressions persist, are copied, and reject arbitrary fields', async (t) => {
+  const { call, stop } = start()
+  t.after(stop)
+  const bot = (await call('create-bot', { name: 'Companion', color: '#69C7B7', avatar: { shape: 'soft-square', face: 'curious', injected: 'no' } })).value
+  assert.deepEqual(bot.avatar, { shape: 'soft-square', face: 'curious' })
+  const updated = (await call('update-bot', { id: bot.id, avatar: { shape: 'soft-flower', face: 'cheerful' } })).value
+  assert.deepEqual(updated.avatar, { shape: 'soft-flower', face: 'cheerful' })
+  const copy = (await call('duplicate-bot', { id: bot.id })).value
+  assert.deepEqual(copy.avatar, updated.avatar)
+  const invalid = (await call('update-bot', { id: bot.id, avatar: { shape: 'soft-square', face: '<script>' } })).value
+  assert.deepEqual(invalid.avatar, { shape: 'soft-square' })
+})

@@ -25,3 +25,6 @@ export const inkFill = color => (isHex(color) ? color : `var(--bt-ink-${inkName(
 export const inkText = color => (color === 'black' ? 'var(--bt-ink-gray)' : inkFill(color))
 // A color as a CSS background, for swatches and masked marks.
 export const paintCss = color => (GRADIENTS[color] ? `linear-gradient(135deg,${GRADIENTS[color].map(([offset, value]) => `${value} ${offset * 100}%`).join(',')})` : inkFill(color))
+
+export const COMPANION_COLORS = ['#69C7B7', '#F17F6B', '#9A76EF', '#F0C65C', '#96C960', '#65A8ED', '#7272E9', '#F3AB58', '#E77DAE', '#8E96A5']
+export const COMPANION_SHINE = '#FFFFFF'

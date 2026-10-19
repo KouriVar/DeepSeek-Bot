@@ -42,6 +42,32 @@ module.exports = __toCommonJS(index_exports);
 // src/client/i18n.js
 var NAMESPACE = "ds-bot";
 var ZH = {
+  "Face": "表情",
+  "Color": "颜色",
+  "Shape": "形状",
+  "Character face": "头像表情",
+  "Face: calm": "平静",
+  "Face: cheerful": "开心",
+  "Face: sleepy": "慵懒",
+  "Face: wink": "眨眼",
+  "Face: curious": "好奇",
+  "Face: bright": "亮晶晶",
+  "Orb": "圆球",
+  "Pebble": "软方",
+  "Prism": "棱镜",
+  "Bloom": "花朵",
+  "Original characters": "原有角色",
+  "Play with this Bot": "和小机器人互动",
+  "A little companion, with a job of its own.": "一个有自己任务的小伙伴。",
+  "Preview animation": "预览动效",
+  "At ease": "待机",
+  "Needs you": "等你",
+  "Has news": "有新消息",
+  "Resting": "休息",
+  "Looking out": "观察",
+  "Try the states. Move closer, or give it a gentle tap.": "切换状态试试；靠近它，或轻轻点一下。",
+  "Started work": "已经开始处理",
+  "Finished work": "已完成任务",
   Plugins: "插件",
   // Shared
   "Main Bot": "主 Bot",
@@ -1206,6 +1232,43 @@ var inkName = (color) => INKS[color] ? color : INKS[LEGACY_INKS[color]] ? LEGACY
 var inkFill = (color) => isHex(color) ? color : `var(--bt-ink-${inkName(color)})`;
 var inkText = (color) => color === "black" ? "var(--bt-ink-gray)" : inkFill(color);
 var paintCss = (color) => GRADIENTS[color] ? `linear-gradient(135deg,${GRADIENTS[color].map(([offset, value]) => `${value} ${offset * 100}%`).join(",")})` : inkFill(color);
+var COMPANION_COLORS = ["#69C7B7", "#F17F6B", "#9A76EF", "#F0C65C", "#96C960", "#65A8ED", "#7272E9", "#F3AB58", "#E77DAE", "#8E96A5"];
+var COMPANION_SHINE = "#FFFFFF";
+
+// src/client/companion-shapes.js
+var flower = () => {
+  const points = Array.from({ length: 64 }, (_, i) => {
+    const a = i * Math.PI / 32, r = 37 + 3 * Math.cos(a * 8);
+    return [50 + Math.cos(a) * r, 50 + Math.sin(a) * r];
+  });
+  return points.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(2)} ${y.toFixed(2)}`).join("") + "Z";
+};
+var eyes = [[41, 51, 5.5, 12, 0], [59, 51, 5.5, 12, 0]];
+var COMPANIONS = {
+  "soft-round": { label: "Orb", path: "M90 50A40 40 0 1 1 10 50A40 40 0 1 1 90 50Z" },
+  "soft-square": { label: "Pebble", path: "M35 10H65Q90 10 90 35V65Q90 90 65 90H35Q10 90 10 65V35Q10 10 35 10Z" },
+  "soft-drop": { label: "Sprout", path: "M39 15Q50 -1 61 15L88 65Q100 88 74 89H26Q0 88 12 65Z" },
+  "soft-gem": { label: "Prism", path: "M41 12Q50 3 59 12L88 41Q97 50 88 59L59 88Q50 97 41 88L12 59Q3 50 12 41Z" },
+  "soft-flower": { label: "Bloom", path: flower() }
+};
+for (const shape of Object.values(COMPANIONS)) Object.assign(shape, { size: 100, layers: "", eyes, companion: true });
+var COMPANION_SHAPES = Object.keys(COMPANIONS);
+function companionFace(face = "calm") {
+  const eye = (x, width = 5.5, height = 12) => `<ellipse class="bt-eye" cx="${x}" cy="51" rx="${width / 2}" ry="${height / 2}"/>`;
+  const smile = (x) => `<path class="bt-eye" d="M${x - 4} 52Q${x} 45 ${x + 4} 52" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>`;
+  let normal;
+  if (face === "cheerful") normal = smile(41) + smile(59);
+  else if (face === "sleepy") normal = '<path class="bt-eye" d="M37 51L45 52M55 52L63 51" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>';
+  else if (face === "wink") normal = eye(41) + smile(59);
+  else if (face === "curious") normal = eye(41, 5.5, 9) + eye(59, 6.5, 16);
+  else if (face === "bright") normal = eye(41, 10, 11) + eye(59, 10, 11) + `<g fill="${COMPANION_SHINE}" opacity=".85"><circle cx="40" cy="49" r="1.7"/><circle cx="58" cy="49" r="1.7"/></g>`;
+  else normal = eye(41) + eye(59);
+  return `<g class="bt-gaze"><g class="bt-eyes"><g class="bt-face-normal">${normal}</g><g class="bt-face-smile" opacity="0">${smile(41)}${smile(59)}</g></g></g>`;
+}
+
+// src/shared/avatar.js
+var AVATAR_FACES = ["calm", "cheerful", "sleepy", "wink", "curious", "bright"];
+var validFace = (face) => AVATAR_FACES.includes(face);
 
 // src/client/characters.js
 var CHARACTERS = {
@@ -1230,7 +1293,7 @@ var CHARACTERS = {
   ring: { body: "M48.1 4.3l8-.1 7.8 1.8 7.3 3.5 6.7 5.4 5.2 6.7 4.1 8.3 2.3 8.9 .7 9-1 9.5-2.5 8.9-4.1 8.3-5.3 7.3-6.6 6.1-7.3 4.5-7.8 2.7-8.4 .9-7.2-.8-7.3-2.5-6.7-4.1-5.6-5.3-4.5-6.5-3.5-7.8-2-8.4-.6-8.4 .9-8.9 2.2-8.4 3.5-7.8 4.9-7.2 5.8-6.1 6.3-4.5 7.1-3.3zM50.5 33.8l2.3-.3 1.7 .4 1.6 1.1 2 2.2 1.3 2.8 .8 2.7 .4 3.4-.1 3.3-1.4 6.2-3 5.6-2.2 2.4-2.2 1.6-2.3 1-2.2 .3-1.7-.4-1.6-1.1-2.8-3.7-1.5-5.2-.1-5.5 1.2-5.6 2.4-5 3.6-4z", shade: "M76.2 14.9l1.1-.5 3.4 3.8 2.8 3.9 2.3 4.5 1.6 3.9 1.6 5.6 1.1 8.3-.4 10.1-1.3 6.1-2.6 7.8-4.6 8.3-4.4 5.6-6.2 5.7-6.1 3.8-7.2 2.9-6.2 1.1-7.8-.1-7.2-1.7-3.9-1.6-4-2.2-5.5-4.5-2.8-3.4 1.7-.6 2.4-2.1 2-2.8 1.2-2.8 1.2-5 1.1-13.4 1.4-7.8 2.5-7.8 3.8-7.3 3.3-4.5 3.4-3.4 3.9-3.1 4.4-2.6 3.9-1.5 4.5-1.1 12.3-.9zM50.5 33.8l.6-.3 2.8 0 1.6 .9 2.7 2.8 3 1.4 3.3 .5 6.1 .2 3.9 .9 1.7 1 1.7 1.6 2.1 4.4 .7 4.5-.3 5-1.2 5-1.9 4.5-2.8 4.2-3.3 3.6-3.9 2.8-3.9 1.7-3.4 .6-3.3-.1-3.4-1.1-2.5-1.7-2.5-3-3.6-7-2.9-3.4-2.1-5-.6-5.6 .6-4.4 1-3.4 2.3-4.4 1.4-2.1 2.3-2.2 2.7-1.7z", light: "M41.1 5.9l.5 .1 .2 .5-.3 .6-12.4 13.3-13.1 18.1-2.3 2.1-1.1 0-.2-1.2 .2-2.8 1.6-5 4.6-8.3 3.9-5.1 4.4-4.4 4.5-3.4 5-2.8zM60.5 53.3l1.2-.3 1.1 .6 1.1 1.3 .8 1.8-.2 3.3-1.5 2.8-2 1.7-2.6 1-7.3 .2 2.2-1.4 2.6-2.6z", eyes: [[56.2, 84.6, 5.3, 13.3, -6.8], [71.7, 78.8, 5.1, 13.4, -6.5]] },
   gem: { body: "M57 9.3l2.9-.4 14.9 3.5 19.6 14.1 1 1.4 .6 1.6-.5 2.6-27.1 56.5-1.6 1.8-2.1 .7-15.9-3.4-42.9-30.7-1.3-1.6-.6-1.6 .5-2.6 12-25.2 1.1-1.5 1.5-1z", shade: "M75.7 14.6l.1-.4 .6 .2 16.9 12.3 1.1 .7 .5-.2 .5 .7 .6 2.6-.5 1.6-26.4 55.1-1.2 2.1-1.1 1.1-1.6 .6-2.1 0-14.3-3.3-42.8-30.7 1.5-.2 11.6 2.5 2.2-.7 2.8-2.6 11.9-24.9 .6-.8 38.2-14.2z", light: "M19.1 23.6l1.1-.4 .5 .5 11.7 2.2 1 .9-.2 .5-1.8 2.7-11.7 24.4-1.6 .6-13.3-2.8-.5-.5 12.1-25.4 1.2-1.7z", eyes: [[51.4, 42.9, 6.7, 17.7, -10], [66.1, 37.4, 6.7, 17.7, -10]] }
 };
-var PICKER_SHAPES = Object.keys(CHARACTERS);
+var PICKER_SHAPES = [...COMPANION_SHAPES, ...Object.keys(CHARACTERS)];
 var PICKER_COLUMNS = 6;
 var DEFAULT_SHAPES = ["star", "moon", "gumdrop", "peanut", "bunny", "kitty", "acorn"];
 var FALLBACK_SHAPE = "gumdrop";
@@ -1261,10 +1324,11 @@ function lookOf(bot) {
   return {
     shape: hasShape(avatar.shape) ? avatar.shape : bot?.id ? defaultShape(String(bot.id)) : FALLBACK_SHAPE,
     image: avatar.image,
+    ...validFace(avatar.face) ? { face: avatar.face } : {},
     color: colorOf(bot)
   };
 }
-var SHAPES = {};
+var SHAPES = { ...COMPANIONS };
 for (const [id, character] of Object.entries(CHARACTERS)) {
   const layers = [
     ...(character.paints ?? []).map(([d, fill2, opacity]) => `<path d="${d}" fill="${fill2}" fill-opacity="${opacity}"/>`),
@@ -1285,23 +1349,36 @@ function bodyOf(def, paint, flat = false) {
   }
 }
 var eyeMarkup = ([cx, cy, w, h39, tilt]) => `<g transform="translate(${cx} ${cy}) rotate(${tilt})"><rect class="bt-eye" x="${-w / 2}" y="${-h39 / 2}" width="${w}" height="${h39}" rx="${w / 2}"/></g>`;
+var expressiveEye = (eye, face, index) => {
+  const [cx, cy, w, height, tilt] = eye;
+  if (face === "calm" || face === "wink" && index === 0) return eyeMarkup(eye);
+  const arc = face === "cheerful" || face === "wink";
+  const figure = arc ? `<path class="bt-eye" d="M${-w * 0.65} ${height * 0.12}Q0 ${-height * 0.35} ${w * 0.65} ${height * 0.12}" fill="none" stroke="#000" stroke-width="${w * 0.48}" stroke-linecap="round"/>` : face === "sleepy" ? `<path class="bt-eye" d="M${-w * 0.6} 0L${w * 0.6} ${height * 0.06}" fill="none" stroke="#000" stroke-width="${w * 0.42}" stroke-linecap="round"/>` : `<ellipse class="bt-eye" rx="${w * (face === "bright" ? 0.8 : 0.5)}" ry="${height * (face === "curious" && index === 0 ? 0.3 : 0.5)}"/>`;
+  return `<g transform="translate(${cx} ${cy}) rotate(${tilt})">${figure}</g>`;
+};
 var happyEyeMarkup = ([cx, cy, w, h39, tilt]) => `<g transform="translate(${cx} ${cy}) rotate(${tilt})"><path class="bt-eye-happy" opacity="0" d="M${-w * 0.62} ${h39 * 0.14}Q0 ${-h39 * 0.42} ${w * 0.62} ${h39 * 0.14}" fill="none" stroke="#000" stroke-width="${w * 0.5}" stroke-linecap="round"/></g>`;
 var maskBox = (size) => `maskUnits="userSpaceOnUse" x="${-size}" y="${-size}" width="${size * 3}" height="${size * 3}"`;
-var holes = (def, eyes) => `<rect x="${-def.size}" y="${-def.size}" width="${def.size * 3}" height="${def.size * 3}" fill="#fff"/>${eyes}`;
+var holes = (def, eyes2) => `<rect x="${-def.size}" y="${-def.size}" width="${def.size * 3}" height="${def.size * 3}" fill="#fff"/>${eyes2}`;
 var MASK_ID = "%MASK%";
 var markSerial = 0;
 var nextMarkSerial = () => markSerial += 1;
 var markupCache = /* @__PURE__ */ new Map();
-function characterMarkup(shape, color) {
-  const key = `${shape}|${color}`;
+function characterMarkup(shape, color, face = "calm") {
+  const key = `${shape}|${color}|${face}`;
   let markup = markupCache.get(key);
   if (markup === void 0) {
     const def = shapeOf(shape);
-    const eyes = `<g class="bt-gaze"><g class="bt-eyes" fill="#000">${def.eyes.map(eyeMarkup).join("")}${def.eyes.map(happyEyeMarkup).join("")}</g></g>`;
+    const eyes2 = `<g class="bt-gaze"><g class="bt-eyes" fill="#000">${def.eyes.map((eye, index) => expressiveEye(eye, face, index)).join("")}${def.eyes.map(happyEyeMarkup).join("")}</g></g>`;
     const stops = GRADIENTS[color];
     const gradient = stops ? `<linearGradient id="${MASK_ID}g" gradientUnits="userSpaceOnUse" x1="18" y1="10" x2="78" y2="92">${stops.map(([offset, value]) => `<stop offset="${offset}" stop-color="${value}"/>`).join("")}</linearGradient>` : "";
     const body = `<g mask="url(#${MASK_ID})">${bodyOf(def, stops ? `url(#${MASK_ID}g)` : inkFill(color))}</g>`;
-    markup = `<defs>${gradient}<mask id="${MASK_ID}" ${maskBox(def.size)}>${holes(def, eyes)}</mask></defs><g class="bt-b">${def.wrap ? `<g transform="${def.wrap}">${body}</g>` : body}</g>`;
+    markup = `<defs>${gradient}<mask id="${MASK_ID}" ${maskBox(def.size)}>${holes(def, eyes2)}</mask></defs><g class="bt-b">${def.wrap ? `<g transform="${def.wrap}">${body}</g>` : body}</g>`;
+    if (def.companion) {
+      const paint = stops ? `url(#${MASK_ID}g)` : inkFill(color);
+      const faceInk = color === "black" ? "var(--bt-main)" : `color-mix(in srgb,${inkFill(color)} 22%,#111820)`;
+      markup = `<defs>${gradient}</defs><g class="bt-b"><path d="${def.path}" fill="${paint}"/><path d="${def.path}" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="1.1"/><g color="${faceInk}" fill="currentColor">${companionFace(face)}</g></g>`;
+    }
+    markup = markup.replace('<g class="bt-b">', '<g class="bt-gesture"><g class="bt-b">') + "</g>";
     markupCache.set(key, markup);
   }
   return markup;
@@ -1627,13 +1704,13 @@ function registerShape(id, shape) {
   if (!Array.isArray(at) || at.length !== 2 || !at.every(isPoint)) throw new Error("A shape needs eyes.at: two [x, y] points");
   const size = Number.isFinite(shape.size) && shape.size > 0 ? shape.size : 100;
   const pick2 = (key, fallback) => Number.isFinite(shape.eyes[key]) ? shape.eyes[key] : fallback;
-  const eyes = at.map(([x, y]) => [x, y, pick2("w", size * 0.1), pick2("h", size * 0.23), pick2("tilt", -27)]);
+  const eyes2 = at.map(([x, y]) => [x, y, pick2("w", size * 0.1), pick2("h", size * 0.23), pick2("tilt", -27)]);
   const previous = SHAPES[id];
   SHAPES[id] = {
     label: String(shape.label ?? id),
     size,
     body: shape.body,
-    eyes,
+    eyes: eyes2,
     ...typeof shape.wrap === "string" ? { wrap: shape.wrap } : {}
   };
   const refresh = () => {
@@ -1927,6 +2004,106 @@ function runStatsOf(values) {
   }
   return shown;
 }
+
+// src/client/companion-theme.js
+var COMPANION_CSS = `
+.bt-gesture{transform-box:fill-box;transform-origin:50% 65%}
+.bt-mark[data-organic] :is(.bt-b,.bt-eye,.bt-eyes){animation:none!important}
+.bt-mark[data-organic] .bt-eye{transform-box:fill-box;transform-origin:center}
+.bt-mark[data-organic] .bt-face-normal,.bt-mark[data-organic] .bt-face-smile{transition:opacity .16s ease}
+.bt-mark[data-organic]:not([data-companion]):is([data-noticed],[data-delighted]) .bt-eye{opacity:0}
+.bt-mark[data-organic]:not([data-companion]):is([data-noticed],[data-delighted]) .bt-eye-happy{opacity:1}
+.bt-mark[data-companion]:is([data-noticed],[data-delighted],[data-state=done]) .bt-face-normal{opacity:0}
+.bt-mark[data-companion]:is([data-noticed],[data-delighted],[data-state=done]) .bt-face-smile{opacity:1}
+.bt-mark[data-organic][data-companion] .bt-eye{scale:1!important}
+.bt-mark[data-companion][data-state=sleeping] .bt-eye{scale:1 .18!important}
+.bt-mark[data-organic][data-state=alert]{filter:drop-shadow(0 0 7px color-mix(in srgb,var(--bt-accent) 25%,transparent))}
+.bt-mark[data-organic][data-delighted]{filter:drop-shadow(0 2px 7px color-mix(in srgb,var(--bt-accent) 18%,transparent))}
+.bt-mark[data-organic]:focus-visible{outline:2px solid var(--bt-accent);outline-offset:6px;border-radius:50%}
+body:not([data-bt-motion=quiet]) :is(.bt-row,.bt-tile)>:is(.bt-mark,.bt-cluster):hover .bt-mark[data-organic] :is(.bt-b,.bt-mark-img){rotate:0;translate:0;scale:1;animation:none}
+.bt-character-aura{color:var(--bt-star);pointer-events:none}
+.bt-mood-spark,.bt-mood-rest,.bt-mood-orbit{display:none;transform-box:view-box;transform-origin:50% 50%}
+.bt-mark:is([data-state=done],[data-delighted]) .bt-mood-spark{display:block;animation:bt-companion-twinkle 2s ease-in-out infinite}
+.bt-mark[data-state=sleeping] .bt-mood-rest{display:block;color:var(--bt-ink-3);animation:bt-companion-rest 4s ease-in-out infinite}
+.bt-mark:is([data-state=working],[data-state=searching],[data-state=sending]) .bt-mood-orbit{display:block;color:var(--bt-ink-3);animation:bt-companion-orbit 5s linear infinite}
+.bt-mark[data-motion-paused=true] .bt-character-aura *{animation-play-state:paused}
+body[data-bt-motion=quiet] .bt-character-aura *{animation:none}
+@keyframes bt-companion-twinkle{0%,100%{opacity:.25;transform:scale(.85)}45%{opacity:1;transform:scale(1.08)}}
+@keyframes bt-companion-rest{0%{opacity:0;transform:translate(0,5%)}30%,65%{opacity:.7}100%{opacity:0;transform:translate(5%,-10%)}}
+@keyframes bt-companion-orbit{to{transform:rotate(360deg)}}
+.bt-appearance{display:flex;flex-direction:column;gap:0;min-width:0}
+.bt-look-row{display:flex;align-items:center;gap:16px;min-height:64px;padding:8px 12px;box-sizing:border-box}
+.bt-look-row+.bt-look-row{border-top:1px solid var(--bt-line)}
+.bt-look-label{flex:0 0 40px;font-size:12px;color:var(--bt-ink-2)}
+.bt-look-row>.bt-colors{display:flex;flex:1;flex-wrap:wrap;justify-content:flex-start;gap:8px}
+.bt-look-row .bt-color{width:24px;height:24px;padding:0}
+.bt-look-row .bt-color>span{width:20px;height:20px}
+.bt-look-row .bt-shapes{flex:1}
+.bt-look-row .bt-shape-row{display:flex;gap:6px;flex-wrap:wrap}
+.bt-look-row .bt-shape,.bt-face-choice{width:40px;height:40px;border:1px solid transparent;border-radius:12px;corner-shape:round;background:none;color:var(--bt-ink);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.bt-look-row .bt-shape[aria-pressed=true],.bt-face-choice[aria-pressed=true]{background:color-mix(in srgb,var(--bt-accent) 10%,transparent);border-color:color-mix(in srgb,var(--bt-accent) 45%,transparent)}
+.bt-look-row .bt-shape .bt-ring{display:none}
+.bt-faces{display:flex;gap:6px;flex-wrap:wrap}
+.bt-face-choice:hover{background:var(--bt-hover)}
+.bt-legacy-looks{border-top:1px solid var(--bt-line);padding:12px;color:var(--bt-ink-2);font-size:12px}
+.bt-legacy-looks summary{cursor:pointer;line-height:20px}
+.bt-legacy-looks>.bt-shapes{padding-top:8px}
+.bt-legacy-looks .bt-shape-row{grid-template-columns:repeat(6,1fr)}
+.bt-avedit{width:340px;max-width:calc(100vw - 32px)}
+.bt-create-body{padding:32px 28px 40px;align-items:flex-start;box-sizing:border-box}
+.bt-create-card{max-width:820px;min-width:0;flex:none;box-sizing:border-box;display:grid;grid-template-columns:minmax(230px,.85fr) minmax(320px,1.15fr);column-gap:40px;row-gap:20px;align-content:start}
+.bt-create-preview{grid-column:1;grid-row:1/7;align-self:start;position:sticky;top:8px;box-sizing:border-box;min-height:424px;gap:16px;padding:52px 20px 28px;border:1px solid var(--bt-line);border-radius:22px;corner-shape:round;background:radial-gradient(ellipse at 50% 30%,color-mix(in srgb,var(--bt-companion-color,var(--bt-accent)) 12%,transparent),transparent 72%),var(--bt-main);overflow:visible}
+.bt-create-preview .bt-create-pop{padding:8px;margin:4px 0 12px}
+.bt-create-preview .bt-create-name{font-size:24px;line-height:32px;font-weight:600;text-align:center;white-space:normal;overflow-wrap:anywhere}
+.bt-preview-hint,.bt-preview-note{margin:0;text-align:center;font-size:12px;line-height:20px;color:var(--bt-ink-2)}
+.bt-preview-note{font-size:11px;color:var(--bt-ink-3);max-width:230px}
+.bt-preview-states{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;max-width:260px;gap:8px;margin-top:12px}
+.bt-preview-states button{border:1px solid var(--bt-line);border-radius:20px;corner-shape:round;padding:5px 10px;background:transparent;color:var(--bt-ink-2);font:inherit;font-size:11px;line-height:18px;cursor:pointer}
+.bt-preview-states button:hover{background:var(--bt-hover);color:var(--bt-ink)}
+.bt-preview-states button[aria-pressed=true]{background:var(--bt-ink);color:var(--bt-main);border-color:var(--bt-ink)}
+.bt-create-card>:not(.bt-create-preview){grid-column:2;min-width:0}
+.bt-create-step{margin:0;font-size:14px;font-weight:600;line-height:20px}
+.bt-create-looks{padding:0;min-height:max-content;flex-shrink:0;gap:0;border-radius:16px;corner-shape:round;overflow:hidden}
+.bt-create-lookbar{border-top:1px solid var(--bt-line);padding:12px;gap:8px}
+.bt-create-foot{border-top:1px solid var(--bt-line);padding-top:20px;margin-top:4px}
+.bt-create-inline .bt-create-card{display:flex}
+.bt-create-inline .bt-create-preview{position:static;min-height:300px}
+.bt-side .bt-row{gap:10px;min-height:44px;padding:8px}
+.bt-side .bt-row-title{font-size:14px;line-height:22px}
+.bt-side .bt-row>.bt-mark,.bt-side .bt-row>.bt-cluster{align-self:center}
+.bt-side .bt-row-preview{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:16px}
+@media(max-width:1000px){.bt-create-card{grid-template-columns:minmax(0,1fr);max-width:520px;row-gap:18px}.bt-create-card>:not(.bt-create-preview){grid-column:1}.bt-create-preview{position:static;grid-row:auto;min-height:310px;padding:28px 16px 22px}.bt-create-preview .bt-create-pop{margin:0}.bt-create-body{padding:20px 16px 32px}}
+@media(prefers-reduced-motion:reduce){.bt-mark[data-organic] *{transition:none!important}.bt-create-pop{animation:none}}
+`;
+var COMPANION_CHAT_CSS = `
+.bt-group-replies{gap:24px}
+.bt-group-msg{grid-template-columns:24px minmax(0,1fr);column-gap:12px;row-gap:6px;align-items:start;margin-top:24px}
+.bt-group-msg>.bt-lead{grid-row:1;clip-path:none;background:none;border-radius:0;overflow:visible}
+.bt-group-msg>.bt-lead :is(.bt-mark,.bt-mark-img){border-radius:0;overflow:visible}
+.bt-group-msg>.bt-lead .bt-mark-img{border-radius:50%;corner-shape:round;overflow:hidden}
+.bt-group-name{grid-column:2;grid-row:1;min-height:24px;font-size:14px;line-height:24px;gap:8px;align-items:center}
+.bt-group-role{font-size:10px;line-height:16px;border-radius:6px;corner-shape:round;padding:0 5px;background:var(--bt-tag-bg);color:var(--bt-ink-3);font-weight:400}
+.bt-group-time{font-size:11px;font-weight:400;color:var(--bt-ink-3);line-height:20px;font-variant-numeric:tabular-nums;margin-left:2px}
+.bt-group-msg>.bt-astack{grid-column:2;min-width:0}
+.bt-group-msg[data-continuation]>.bt-astack{grid-row:1}
+.bt-group-replies>.bt-group-msg+.bt-group-msg:not([data-continuation]){margin-top:8px}
+.bt-group-replies>.bt-event{padding-left:36px;font-size:12px;line-height:20px;color:var(--bt-ink-3)}
+.bt-group-replies>.bt-activity{gap:12px;min-height:28px;font-size:13px;padding-top:4px}
+.bt-group-replies>.bt-activity>.bt-mark{border-radius:0;clip-path:none;background:none;overflow:visible}
+.bt-group-replies>.bt-activity .bt-mark-img{border-radius:50%}
+.bt-work-card{display:flex;align-items:center;gap:12px;margin:0 0 0 36px;padding:12px 14px;border:1px solid var(--bt-line);border-radius:16px;corner-shape:round;background:color-mix(in srgb,var(--bt-ink) 2%,var(--bt-main));color:var(--bt-ink-2);text-align:left;cursor:pointer;font:inherit;min-width:0;transition:background-color .15s ease,border-color .15s ease}
+.bt-work-card:hover{background:var(--bt-hover);border-color:var(--bt-line-2)}
+.bt-work-copy{display:flex;flex:1;flex-direction:column;gap:3px;min-width:0;font-size:12px;line-height:18px}
+.bt-work-copy strong{font-size:13px;font-weight:500;line-height:20px;color:var(--bt-ink)}
+.bt-work-state{display:flex;width:20px;align-items:center;justify-content:center;color:var(--bt-ink-3)}
+.bt-work-card[data-status=done] .bt-work-state{color:var(--bt-green)}
+.bt-work-card[data-status=approval]{border-color:color-mix(in srgb,var(--bt-star) 28%,var(--bt-line))}
+.bt-work-card[data-status=approval] .bt-work-state{color:var(--bt-star)}
+.bt-work-card>svg:last-child{width:14px;height:14px;color:var(--bt-ink-3)}
+.bt-work-card:focus-visible{outline:2px solid var(--bt-accent);outline-offset:2px}
+[data-chat-flow-kind=tool-call]:has(.bt-group-replies),[data-chat-flow-kind=turn-trigger]:has(.bt-group-msg){margin-block:24px!important}
+@media(max-width:600px){.bt-group-msg{column-gap:10px}.bt-work-card{margin-left:34px}.bt-group-replies>.bt-event{padding-left:34px}}
+`;
 
 // src/client/motion.js
 var import_react = require("react");
@@ -3116,9 +3293,196 @@ function installCompiledStyles(text, tag) {
   };
 }
 
+// src/client/character-motion.js
+function randomStream(seed) {
+  let value = seed || 1;
+  return () => {
+    value ^= value << 13;
+    value ^= value >>> 17;
+    value ^= value << 5;
+    return (value >>> 0) / 4294967296;
+  };
+}
+function bodyFrames(state, small = false) {
+  const quiet = state === "sleeping";
+  const reading = ["working", "searching", "sending"].includes(state);
+  const attention = ["alert", "done"].includes(state);
+  const lift = small ? 3 : 6;
+  if (reading) return [
+    { transform: "translateY(0) scale(1.025,.975) rotate(-2deg)", offset: 0 },
+    { transform: `translateY(-${lift}%) scale(.98,1.025) rotate(2deg)`, offset: 0.24 },
+    { transform: "translateY(0) scale(1.035,.965) rotate(0)", offset: 0.46 },
+    { transform: `translateY(-${lift * 0.4}%) scale(.99,1.01) rotate(-1deg)`, offset: 0.68 },
+    { transform: "translateY(0) scale(1.025,.975) rotate(-2deg)", offset: 1 }
+  ];
+  if (attention) return [
+    { transform: "translateY(0) scale(1)", offset: 0 },
+    { transform: "translateY(0) scale(1.08,.92)", offset: 0.08 },
+    { transform: `translateY(-${lift * 2}%) scale(.96,1.04) rotate(-4deg)`, offset: 0.2 },
+    { transform: "translateY(0) scale(1.06,.94)", offset: 0.34 },
+    { transform: `translateY(-${lift}%) scale(.98,1.02) rotate(3deg)`, offset: 0.44 },
+    { transform: "translateY(0) scale(1)", offset: 0.6 },
+    { transform: "translateY(0) scale(1)", offset: 1 }
+  ];
+  return [
+    { transform: "translateY(0) scale(1) rotate(0)" },
+    { transform: `translateY(-${quiet ? 1.2 : 0.7}%) scale(${quiet ? ".98,1.035" : ".99,1.018"}) rotate(${quiet ? 1.5 : 0.6}deg)` },
+    { transform: "translateY(0) scale(1) rotate(0)" }
+  ];
+}
+function installCharacterMotion(node, { seed = 1, state = "idle", interactive = false } = {}) {
+  const rng = randomStream(seed);
+  const body = node.querySelector(".bt-b") ?? node.querySelector(".bt-mark-img");
+  const gesture = node.querySelector(".bt-gesture") ?? body;
+  const eyes2 = [...node.querySelectorAll(".bt-eye")];
+  const gaze = node.querySelector(".bt-eyes");
+  if (!body?.animate) return () => {
+  };
+  const animations = /* @__PURE__ */ new Set();
+  const timeouts = /* @__PURE__ */ new Set();
+  let stopped = false, visible = true, noticed = false, clicks = 0;
+  let motion = document.body.dataset.btMotion ?? "normal";
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const allowed = () => !stopped && visible && !document.hidden && !reduce.matches;
+  const wait = (fn, ms) => {
+    const id = setTimeout(() => {
+      timeouts.delete(id);
+      if (!stopped) fn();
+    }, ms);
+    timeouts.add(id);
+  };
+  const play = (target, frames, options) => {
+    if (!allowed() || !target) return void 0;
+    const animation = target.animate(frames, options);
+    animations.add(animation);
+    animation.onfinish = () => {
+      animations.delete(animation);
+      animation.cancel();
+    };
+    return animation;
+  };
+  const blink = () => {
+    if (allowed() && !noticed && state !== "sleeping" && motion !== "quiet") {
+      const shut = () => eyes2.forEach((eye) => play(eye, [
+        { transform: "scaleY(1)" },
+        { transform: "scaleY(.08)", offset: 0.45 },
+        { transform: "scaleY(1)" }
+      ], { duration: 190 + rng() * 70, easing: "ease-in-out" }));
+      shut();
+      if (rng() > 0.75) wait(shut, 300);
+    }
+    wait(blink, 2700 + rng() * 4300);
+  };
+  const react = (kind = 0) => {
+    if (!allowed() || motion === "quiet") return;
+    const frames = kind % 3 === 0 ? [
+      { transform: "scale(1) rotate(0)" },
+      { transform: "scale(1.09,.91) rotate(-4deg)", offset: 0.18 },
+      { transform: "translateY(-9%) scale(.96,1.04) rotate(4deg)", offset: 0.48 },
+      { transform: "scale(1.025,.975) rotate(-1deg)", offset: 0.76 },
+      { transform: "scale(1) rotate(0)" }
+    ] : kind % 3 === 1 ? [
+      { transform: "rotate(0)" },
+      { transform: "rotate(-9deg)", offset: 0.25 },
+      { transform: "rotate(7deg)", offset: 0.55 },
+      { transform: "rotate(-2deg)", offset: 0.8 },
+      { transform: "rotate(0)" }
+    ] : [
+      { transform: "scale(1)" },
+      { transform: "scale(.95,1.07) translateY(-2%)", offset: 0.4 },
+      { transform: "scale(1.04,.96)", offset: 0.75 },
+      { transform: "scale(1)" }
+    ];
+    play(gesture, frames, { duration: 650 + rng() * 200, easing: "cubic-bezier(.22,.7,.32,1)" });
+  };
+  const fidget = () => {
+    if (allowed() && !noticed && motion !== "quiet" && ["idle", "watching", "waiting"].includes(state)) {
+      if (rng() < 0.5) {
+        play(gaze, [{ transform: "translateX(0)" }, { transform: "translateX(-9%)", offset: 0.2 }, { transform: "translateX(-9%)", offset: 0.48 }, { transform: "translateX(7%)", offset: 0.7 }, { transform: "translateX(0)" }], { duration: 1800, easing: "ease-in-out" });
+      } else react(Math.floor(rng() * 3));
+    }
+    wait(fidget, (motion === "lively" ? 4200 : 8500) + rng() * 8e3);
+  };
+  const reset = () => {
+    for (const animation of animations) animation.cancel();
+    animations.clear();
+    motion = document.body.dataset.btMotion ?? "normal";
+    node.dataset.motionPaused = allowed() ? "false" : "true";
+    if (!allowed() || motion === "quiet" && ["idle", "sleeping", "watching"].includes(state)) return;
+    play(body, bodyFrames(state, node.clientWidth <= 28), {
+      duration: ["working", "searching", "sending"].includes(state) ? 1800 : ["alert", "done"].includes(state) ? 3e3 : 4300 + rng() * 1e3,
+      iterations: Infinity,
+      easing: "ease-in-out"
+    });
+    if (motion !== "quiet" && ["working", "searching", "watching"].includes(state)) {
+      play(gaze, [{ transform: "translateX(-8%)" }, { transform: "translateX(9%)", offset: 0.6 }, { transform: "translateX(9%)", offset: 0.75 }, { transform: "translateX(-8%)" }], {
+        duration: state === "watching" ? 7600 : 2100,
+        iterations: Infinity,
+        easing: "ease-in-out"
+      });
+    }
+  };
+  const enter = () => {
+    noticed = true;
+    node.dataset.noticed = "";
+    react(1);
+  };
+  const leave = () => {
+    noticed = false;
+    delete node.dataset.noticed;
+  };
+  const click = () => {
+    react(clicks++);
+    node.dataset.delighted = "";
+    wait(() => delete node.dataset.delighted, 1e3);
+  };
+  const key = (event) => {
+    if (event.target === node && (event.key === "Enter" || event.key === " ")) {
+      event.preventDefault();
+      click();
+    }
+  };
+  const observer = new MutationObserver(reset);
+  observer.observe(document.body, { attributes: true, attributeFilter: ["data-bt-motion"] });
+  const intersection = typeof IntersectionObserver === "function" ? new IntersectionObserver((entries2) => {
+    visible = entries2[0]?.isIntersecting !== false;
+    reset();
+  }) : null;
+  intersection?.observe(node);
+  document.addEventListener("visibilitychange", reset);
+  reduce.addEventListener("change", reset);
+  if (interactive) {
+    node.addEventListener("pointerenter", enter);
+    node.addEventListener("pointerleave", leave);
+    node.addEventListener("click", click);
+    node.addEventListener("keydown", key);
+  }
+  node.dataset.organic = "";
+  reset();
+  wait(blink, 800 + rng() * 3e3);
+  wait(fidget, 3e3 + rng() * 6e3);
+  return () => {
+    stopped = true;
+    timeouts.forEach(clearTimeout);
+    animations.forEach((animation) => animation.cancel());
+    observer.disconnect();
+    intersection?.disconnect();
+    document.removeEventListener("visibilitychange", reset);
+    reduce.removeEventListener("change", reset);
+    node.removeEventListener("pointerenter", enter);
+    node.removeEventListener("pointerleave", leave);
+    node.removeEventListener("click", click);
+    node.removeEventListener("keydown", key);
+    delete node.dataset.organic;
+    delete node.dataset.motionPaused;
+    delete node.dataset.noticed;
+    delete node.dataset.delighted;
+  };
+}
+
 // src/client/mark.js
 var import_react2 = require("react");
-var STATES = ["idle", "thinking", "searching", "working", "sending", "orbit", "waiting", "alert", "done"];
+var STATES = ["idle", "thinking", "searching", "working", "sending", "orbit", "waiting", "alert", "done", "sleeping", "watching"];
 var botState = (running, activity, alert) => running ? STATES.includes(activity) && activity !== "waiting" ? activity : "working" : alert ? "alert" : activity === "waiting" ? "waiting" : "idle";
 var toolState = (name) => /^(message_bot|stop_bot|create_bot|update_bot|create_group|update_group|delete_group|post_to_group)$/.test(name) ? "sending" : /search|fetch|browse|read|grep|glob|list|recall/i.test(name) ? "searching" : "working";
 function useGaze(ref, enabled) {
@@ -3159,29 +3523,31 @@ function BotMark({ bot, look: given, size = 36, state = "idle", live = false, ga
   const ref = (0, import_react2.useRef)(null);
   const maskId = (0, import_react2.useRef)("");
   if (maskId.current === "") maskId.current = `bt-mark-${nextMarkSerial()}`;
-  const [poked, setPoked] = (0, import_react2.useState)(false);
-  useGaze(ref, gaze);
+  useGaze(ref, gaze || live && size >= 32);
+  (0, import_react2.useEffect)(() => {
+    if (!(live || pokeable) || !ref.current) return void 0;
+    return installCharacterMotion(ref.current, { seed: fnv1a(String(bot?.id ?? "preview")), state, interactive: live || pokeable });
+  }, [live, pokeable, state, look.shape, look.image, look.color, look.face]);
   const common = {
     ref,
-    className: poked ? "bt-mark bt-mark-poke" : "bt-mark",
+    className: "bt-mark",
     "data-shape": look.image ? "image" : shapeId(look.shape),
     "data-state": STATES.includes(state) ? state : "idle",
     "data-live": live ? "" : void 0,
     "data-fidget": live ? FIDGETS[fnv1a(`${bot?.id ?? ""}:fidget`) % FIDGETS.length] : void 0,
-    "data-gaze": gaze ? "" : void 0,
+    "data-gaze": gaze || live && size >= 32 ? "" : void 0,
+    "data-companion": shapeOf(look.shape).companion ? "" : void 0,
     "data-poke": pokeable ? "" : void 0,
     style: { width: size, height: size, ...live ? { "--bt-delay": `${-(fnv1a(String(bot?.id ?? "")) % 5e3) / 1e3}s`, "--bt-fidget-delay": `${-(fnv1a(`${bot?.id ?? ""}:when`) % 9e3) / 1e3}s` } : {} },
-    role: label ? "img" : void 0,
-    "aria-label": label,
-    "aria-hidden": label ? void 0 : true,
-    onClick: pokeable ? () => setPoked(true) : void 0,
-    onAnimationEnd: poked ? (event) => {
-      if (/^bt-poke/.test(event.animationName)) setPoked(false);
-    } : void 0
+    role: pokeable ? "button" : label ? "img" : void 0,
+    tabIndex: pokeable ? 0 : void 0,
+    "aria-label": pokeable ? label ?? t("Play with this Bot") : label,
+    "aria-hidden": label || pokeable ? void 0 : true
   };
   if (look.image) return (0, import_react2.createElement)("span", common, (0, import_react2.createElement)("img", { className: "bt-mark-img", src: look.image, alt: "", draggable: false }));
   const box = shapeOf(look.shape).size;
-  return (0, import_react2.createElement)("span", common, (0, import_react2.createElement)("svg", { viewBox: `0 0 ${box} ${box}`, dangerouslySetInnerHTML: { __html: characterMarkup(look.shape, look.color).replaceAll(MASK_ID, maskId.current) } }));
+  const aura = `<g class="bt-character-aura" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><g class="bt-mood-spark"><path d="M84 8L86 14L92 16L86 18L84 24L82 18L76 16L82 14Z" stroke-width="1.8"/></g><g class="bt-mood-orbit"><circle cx="10" cy="49" r="2" fill="currentColor" stroke="none"/><circle cx="90" cy="49" r="2" fill="currentColor" stroke="none"/></g><g class="bt-mood-rest" stroke-width="2.2"><path d="M76 21H83L76 28H83"/><path d="M87 9H94L87 16H94"/></g></g>`;
+  return (0, import_react2.createElement)("span", common, (0, import_react2.createElement)("svg", { viewBox: `0 0 ${box} ${box}`, dangerouslySetInnerHTML: { __html: characterMarkup(look.shape, look.color, look.face).replaceAll(MASK_ID, maskId.current) + aura } }));
 }
 function StarIcon({ size = 8 }) {
   return (0, import_react2.createElement)(
@@ -4342,11 +4708,11 @@ function EventLine({ prefix, bots, joiner = t("and"), onOpen, whole = false }) {
   });
   return (0, import_react7.createElement)("div", { className: "bt-event" }, parts);
 }
-function GroupMessage({ bot, text, texts: texts2 = [text], room: room2, roster, actions, msgKey, useUi, whole, continuation = false }) {
+function GroupMessage({ bot, text, texts: texts2 = [text], room: room2, roster, actions, msgKey, useUi, whole, continuation = false, at }) {
   const lead = (0, import_react7.createElement)(
     "button",
     { type: "button", className: "bt-lead", "aria-label": t("Open {name}'s chat", { name: bot.name }), onClick: () => actions.openSession(bot.id) },
-    (0, import_react7.createElement)(BotMark, { bot, size: 24 })
+    (0, import_react7.createElement)(BotMark, { bot, size: 24, live: !bot.avatar?.image })
   );
   return (0, import_react7.createElement)(
     "div",
@@ -4356,7 +4722,8 @@ function GroupMessage({ bot, text, texts: texts2 = [text], room: room2, roster, 
       "span",
       { className: "bt-group-name" },
       bot.name,
-      room2?.admin === bot.id ? (0, import_react7.createElement)("span", { className: "bt-group-role" }, t("Admin")) : null
+      room2?.admin === bot.id ? (0, import_react7.createElement)("span", { className: "bt-group-role" }, t("Admin")) : null,
+      typeof at === "number" && Number.isFinite(new Date(at).getTime()) ? (0, import_react7.createElement)("time", { className: "bt-group-time", dateTime: new Date(at).toISOString() }, new Intl.DateTimeFormat(dateLocale(), { hour: "2-digit", minute: "2-digit" }).format(at)) : null
     ),
     (0, import_react7.createElement)(Bubbles, { texts: texts2, roster, selfId: bot.id, actions, sessionId: room2?.id, msgKey, useUi, whole })
   );
@@ -4840,24 +5207,31 @@ function GroupReplies({ sessionId, callId, done, content, roster, actions, useUi
       if (reply.kind === "cut") {
         return (0, import_react7.createElement)("div", { key: `${reply.botId}-${index}`, className: "bt-event" }, t("{name} was cut off by a restart again and stopped", { name: bot.name }));
       }
-      if (reply.kind === "approval" || reply.kind === "working") {
+      if (reply.kind === "approval" || reply.kind === "working" || reply.kind === "done") {
         return (0, import_react7.createElement)(
-          "div",
-          { key: `${reply.botId}-${index}`, className: "bt-event" },
+          "button",
+          {
+            key: `${reply.botId}-${index}`,
+            type: "button",
+            className: "bt-work-card",
+            "data-status": reply.kind,
+            onClick: () => reply.kind === "approval" ? actions.showDetails(sessionId) : actions.openSession(bot.id)
+          },
+          (0, import_react7.createElement)(BotMark, { bot, size: 24 }),
           (0, import_react7.createElement)(
-            "button",
-            { type: "button", className: "bt-event-whole", onClick: () => actions.showDetails(sessionId) },
-            (0, import_react7.createElement)("span", { className: "bt-event-name" }, t(reply.kind === "working" ? "{name} started on it" : "{name} paused for your approval", { name: bot.name }))
-          )
+            "span",
+            { className: "bt-work-copy" },
+            (0, import_react7.createElement)("strong", null, bot.name),
+            (0, import_react7.createElement)("span", null, t(reply.kind === "working" ? "Started work" : reply.kind === "done" ? "Finished work" : "Waiting for your approval"))
+          ),
+          (0, import_react7.createElement)("span", { className: "bt-work-state" }, (0, import_react7.createElement)(reply.kind === "done" ? CheckIcon : ClockIcon)),
+          (0, import_react7.createElement)(ChevronRightIcon)
         );
       }
       if (reply.kind === "stopped") {
         return (0, import_react7.createElement)("div", { key: `${reply.botId}-${index}`, className: "bt-event" }, t("You stopped {name}'s work", { name: bot.name }));
       }
-      if (reply.kind === "done") {
-        return (0, import_react7.createElement)("div", { key: `${reply.botId}-${index}`, className: "bt-event" }, t("{name} finished its work", { name: bot.name }));
-      }
-      return (0, import_react7.createElement)(GroupMessage, { key: `${reply.botId}-${index}`, bot, texts: texts2, continuation, room: room2, roster, actions, msgKey: callId ? `${sessionId}:${callId}:${index}` : void 0, useUi });
+      return (0, import_react7.createElement)(GroupMessage, { key: `${reply.botId}-${index}`, bot, texts: texts2, continuation, at: reply.time, room: room2, roster, actions, msgKey: callId ? `${sessionId}:${callId}:${index}` : void 0, useUi });
     }),
     pending.map((id) => {
       const bot = roster.byId[id];
@@ -4865,7 +5239,7 @@ function GroupReplies({ sessionId, callId, done, content, roster, actions, useUi
       return (0, import_react7.createElement)(
         "div",
         { key: `pending-${id}`, className: "bt-activity" },
-        (0, import_react7.createElement)(BotMark, { bot, size: 24, state: speakerTool ? toolState(speakerTool) : "thinking" }),
+        (0, import_react7.createElement)(BotMark, { bot, size: 24, live: true, state: speakerTool ? toolState(speakerTool) : "thinking" }),
         (0, import_react7.createElement)(Shimmer, null, speakerDoing ? `${bot.name} · ${speakerDoing}…` : t("{name} is typing…", { name: bot.name }))
       );
     })
@@ -5215,13 +5589,13 @@ function BotRow({ bot, roster, actions, useSessions, useSessionStatus, useSessio
       onClick: () => actions.openSession(id),
       onContextMenu
     },
-    (0, import_react9.createElement)("span", { className: "bt-nav-icon", "data-state": running || away ? "working" : alert ? "alert" : "idle", "aria-hidden": true }, (0, import_react9.createElement)(PeopleIcon)),
+    (0, import_react9.createElement)(BotAvatar, { bot, size: 24, state, badge: false, live: true }),
     pinned && !wide ? (0, import_react9.createElement)(PinMark) : null,
     wide ? (0, import_react9.createElement)(
       "span",
       { className: "bt-row-body" },
       (0, import_react9.createElement)("span", { className: "bt-row-name" }, (0, import_react9.createElement)("span", { className: "bt-row-title" }, bot.name), main ? (0, import_react9.createElement)("span", { className: "bt-nav-role" }, t("Main Bot")) : null, pinned ? (0, import_react9.createElement)(PinMark) : null),
-      awayLine ? (0, import_react9.createElement)("span", { className: "bt-row-preview" }, awayLine) : waitsFor ? (0, import_react9.createElement)("span", { className: "bt-row-preview" }, waitsFor) : null
+      awayLine ? (0, import_react9.createElement)("span", { className: "bt-row-preview" }, awayLine) : waitsFor ? (0, import_react9.createElement)("span", { className: "bt-row-preview" }, waitsFor) : bot.role && bot.role.trim() !== bot.name.trim() ? (0, import_react9.createElement)("span", { className: "bt-row-preview" }, bot.role) : null
     ) : null,
     wide && unread && !active ? (0, import_react9.createElement)("span", { className: "bt-unread", "aria-hidden": true }) : null
   );
@@ -5255,7 +5629,7 @@ function RoomRow({ room: room2, roster, actions, useSessions, useSessionStatus, 
         actions.openMenu({ kind: "room", id, x: event.clientX, y: event.clientY });
       }
     },
-    (0, import_react9.createElement)("span", { className: "bt-nav-icon", "aria-hidden": true }, (0, import_react9.createElement)(ChatsIcon)),
+    (0, import_react9.createElement)(RoomAvatar, { room: room2, roster, size: 24 }),
     pinned && !wide ? (0, import_react9.createElement)(PinMark) : null,
     wide ? (0, import_react9.createElement)(
       "span",
@@ -6051,7 +6425,7 @@ function BotToolView(props) {
 function coordinationCss(roster, sessionId) {
   const hidden = (roster.exchangeTurns?.[sessionId] ?? []).filter((turn) => Number.isSafeInteger(turn) && turn >= 0);
   const hiddenCss = hidden.map((turn) => `[data-chat-turn="${turn}"]:not([data-chat-flow-kind="turn-trigger"]){display:none!important}`).join("");
-  return hiddenCss + (roster.roomsById[sessionId] ? '[data-chat-flow-kind="assistant-step"]{display:none!important}' : "");
+  return hiddenCss + (roster.roomsById[sessionId] ? '[data-chat-flow-kind="assistant-step"],[data-chat-flow-kind="turn-process"]{display:none!important}[data-step-process]:has(.bt-group-replies)>div:first-child{display:none}' : "");
 }
 function NativeBotDetails({ sessionId, actions, useUi, useRoster }) {
   const open = useUi((state) => state.details === sessionId);
@@ -8290,32 +8664,62 @@ function ShapeRing({ shape, size }) {
   const markup = `<defs><mask id="${maskId.current}" ${maskBox(def.size)}>${holes(def, `<g stroke="#000" stroke-width="${6 * unit}" stroke-linejoin="round">${bodyOf(def, "#000", true)}</g>`)}</mask></defs><g mask="url(#${maskId.current})" stroke="currentColor" stroke-width="${8 * unit}" stroke-linejoin="round">${bodyOf(def, "currentColor", true)}</g>`;
   return (0, import_react19.createElement)("svg", { className: "bt-ring", viewBox: `0 0 ${def.size} ${def.size}`, "aria-hidden": true, dangerouslySetInnerHTML: { __html: markup } });
 }
-function CharacterGrid({ look, hasPhoto = false, onShape, onColor }) {
-  const shapes = [...PICKER_SHAPES, ...Object.keys(SHAPES).filter((id) => !Object.hasOwn(CHARACTERS, id))];
-  if (!shapes.includes(look.shape)) shapes.push(look.shape);
-  const rows = [];
-  for (let index = 0; index < shapes.length; index += PICKER_COLUMNS) rows.push(shapes.slice(index, index + PICKER_COLUMNS));
+function CharacterGrid({ look, hasPhoto = false, onShape, onColor, onFace }) {
+  const modern = COMPANION_SHAPES.includes(look.shape);
+  const extra = Object.keys(SHAPES).filter((id) => !PICKER_SHAPES.includes(id));
+  const classic = [...Object.keys(CHARACTERS), ...extra];
+  const shapeButtons = (shapes) => (0, import_react19.createElement)("div", { className: "bt-shape-row" }, shapes.map((id) => (0, import_react19.createElement)("button", {
+    key: id,
+    type: "button",
+    className: "bt-shape",
+    "aria-label": t(shapeOf(id).label),
+    title: t(shapeOf(id).label),
+    "aria-pressed": !hasPhoto && look.shape === id,
+    onClick: () => onShape(id)
+  }, (0, import_react19.createElement)(ShapeRing, { shape: id, size: 32 }), (0, import_react19.createElement)(BotMark, { look: { shape: id, color: look.color, face: look.face }, size: 32 }))));
   return (0, import_react19.createElement)(
-    import_react19.Fragment,
-    null,
-    (0, import_react19.createElement)("div", { className: "bt-shapes", role: "group", "aria-label": t("Character shape") }, rows.map((row, index) => (0, import_react19.createElement)("div", { key: index, className: "bt-shape-row" }, row.map((id) => (0, import_react19.createElement)("button", {
-      key: id,
-      type: "button",
-      className: "bt-shape",
-      "aria-label": t(shapeOf(id).label),
-      title: t(shapeOf(id).label),
-      "aria-pressed": !hasPhoto && look.shape === id,
-      onClick: () => onShape(id)
-    }, (0, import_react19.createElement)(ShapeRing, { shape: id, size: 36 }), (0, import_react19.createElement)(BotMark, { look: { shape: id, color: look.color }, size: 36 })))))),
-    (0, import_react19.createElement)("div", { className: "bt-colors", role: "group", "aria-label": t("Character color") }, CHARACTER_COLORS.map((color) => (0, import_react19.createElement)("button", {
-      key: color,
-      type: "button",
-      className: "bt-color",
-      "aria-label": t(capitalize(color)),
-      title: t(capitalize(color)),
-      "aria-pressed": look.color === color,
-      onClick: () => onColor(color)
-    }, (0, import_react19.createElement)("span", { style: { background: paintCss(color) } }))))
+    "div",
+    { className: "bt-appearance" },
+    (0, import_react19.createElement)(
+      "div",
+      { className: "bt-look-row" },
+      (0, import_react19.createElement)("span", { className: "bt-look-label" }, t("Color")),
+      (0, import_react19.createElement)("div", { className: "bt-colors", role: "group", "aria-label": t("Character color") }, (modern ? COMPANION_COLORS : CHARACTER_COLORS).map((color) => (0, import_react19.createElement)("button", {
+        key: color,
+        type: "button",
+        className: "bt-color",
+        "aria-label": color.startsWith("#") ? color : t(capitalize(color)),
+        title: color.startsWith("#") ? color : t(capitalize(color)),
+        "aria-pressed": look.color === color,
+        onClick: () => onColor(color)
+      }, (0, import_react19.createElement)("span", { style: { background: paintCss(color) } }))))
+    ),
+    (0, import_react19.createElement)(
+      "div",
+      { className: "bt-look-row" },
+      (0, import_react19.createElement)("span", { className: "bt-look-label" }, t("Shape")),
+      (0, import_react19.createElement)("div", { className: "bt-shapes", role: "group", "aria-label": t("Character shape") }, shapeButtons(COMPANION_SHAPES))
+    ),
+    onFace ? (0, import_react19.createElement)(
+      "div",
+      { className: "bt-look-row" },
+      (0, import_react19.createElement)("span", { className: "bt-look-label" }, t("Face")),
+      (0, import_react19.createElement)("div", { className: "bt-faces", role: "group", "aria-label": t("Character face") }, AVATAR_FACES.map((face) => (0, import_react19.createElement)("button", {
+        key: face,
+        type: "button",
+        className: "bt-face-choice",
+        "aria-label": t(`Face: ${face}`),
+        title: t(`Face: ${face}`),
+        "aria-pressed": (look.face ?? "calm") === face,
+        onClick: () => onFace(face)
+      }, (0, import_react19.createElement)(BotMark, { look: { shape: "soft-square", color: look.color, face }, size: 32 }))))
+    ) : null,
+    (0, import_react19.createElement)(
+      "details",
+      { className: "bt-legacy-looks", open: !modern && !hasPhoto },
+      (0, import_react19.createElement)("summary", null, t("Original characters")),
+      (0, import_react19.createElement)("div", { className: "bt-shapes" }, Array.from({ length: Math.ceil(classic.length / PICKER_COLUMNS) }, (_, index) => (0, import_react19.createElement)(import_react19.Fragment, { key: index }, shapeButtons(classic.slice(index * PICKER_COLUMNS, (index + 1) * PICKER_COLUMNS)))))
+    )
   );
 }
 function AvatarEditor({ bot, actions, run, onClose }) {
@@ -8381,7 +8785,8 @@ function AvatarEditor({ bot, actions, run, onClose }) {
     tab === "bot" ? (0, import_react19.createElement)(CharacterGrid, {
       look,
       hasPhoto,
-      onShape: (shape) => run(actions.updateBot(bot.id, { avatar: { shape } })),
+      onShape: (shape) => run(actions.updateBot(bot.id, { avatar: { shape, ...look.face ? { face: look.face } : {} } })),
+      onFace: (face) => run(actions.updateBot(bot.id, { avatar: { shape: look.shape, face } })),
       onColor: (color) => run(actions.updateBot(bot.id, { color }))
     }) : null,
     tab === "upload" ? (0, import_react19.createElement)(
@@ -8606,6 +9011,7 @@ function startModel(roster) {
 }
 function createPayload({ name, look, image, model, effort, brief }) {
   const payload = { name, color: look.color, avatar: image ? { shape: look.shape, image } : { shape: look.shape } };
+  if (look.face) payload.avatar.face = look.face;
   if (model) payload.model = model;
   if (effort) payload.effort = effort;
   if (brief) payload.brief = brief;
@@ -8616,12 +9022,13 @@ function createPayload({ name, look, image, model, effort, brief }) {
 var import_react20 = require("react");
 var pick = (list) => list[Math.floor(Math.random() * list.length)];
 var randomLook = (avoid = {}) => {
-  const shapes = DEFAULT_SHAPES.filter((shape) => shape !== avoid.shape);
-  const colors = DEFAULT_COLORS.filter((color) => color !== avoid.color);
-  return { shape: pick(shapes), color: pick(colors) };
+  const shapes = COMPANION_SHAPES.filter((shape) => shape !== avoid.shape);
+  const colors = COMPANION_COLORS.filter((color) => color !== avoid.color);
+  return { shape: pick(shapes), color: pick(colors), face: avoid.face ?? "calm" };
 };
 function CreateBot({ roster, actions, start, brief = "", onBack, canGoBack, onCreated, inline = false }) {
   const [look, setLook] = (0, import_react20.useState)(() => randomLook());
+  const [previewState, setPreviewState] = (0, import_react20.useState)("idle");
   const [image, setImage] = (0, import_react20.useState)(null);
   const [name, setName] = (0, import_react20.useState)(start?.name ?? "");
   const [model, setModel] = (0, import_react20.useState)(() => startModel(roster));
@@ -8661,14 +9068,21 @@ function CreateBot({ roster, actions, start, brief = "", onBack, canGoBack, onCr
     { className: "bt-create-card" },
     (0, import_react20.createElement)(
       "div",
-      { className: "bt-create-preview" },
+      { className: "bt-create-preview", style: { "--bt-companion-color": inkFill(look.color) } },
       // The key remounts the mark, so every new pick plays the pop.
       (0, import_react20.createElement)(
         "span",
         { key: `${look.shape}:${look.color}:${image ? "photo" : ""}`, className: "bt-create-pop" },
-        (0, import_react20.createElement)(BotMark, { look: previewLook, bot: { id: "new-bot" }, size: 88, live: true, gaze: true, pokeable: true })
+        (0, import_react20.createElement)(BotMark, { look: previewLook, bot: { id: "new-bot" }, size: 144, state: previewState, live: true, gaze: true, pokeable: true })
       ),
-      (0, import_react20.createElement)("span", { className: "bt-create-name" }, finalName)
+      (0, import_react20.createElement)("span", { className: "bt-create-name" }, finalName),
+      (0, import_react20.createElement)("p", { className: "bt-preview-hint" }, t("A little companion, with a job of its own.")),
+      (0, import_react20.createElement)(
+        "div",
+        { className: "bt-preview-states", role: "group", "aria-label": t("Preview animation") },
+        [["idle", "At ease"], ["working", "Working"], ["alert", "Needs you"], ["done", "Has news"], ["sleeping", "Resting"], ["watching", "Looking out"]].map(([id, label]) => (0, import_react20.createElement)("button", { key: id, type: "button", "aria-pressed": previewState === id, onClick: () => setPreviewState(id) }, t(label)))
+      ),
+      (0, import_react20.createElement)("p", { className: "bt-preview-note" }, t("Try the states. Move closer, or give it a gentle tap."))
     ),
     (0, import_react20.createElement)("div", { className: "bt-create-step" }, t("Look")),
     (0, import_react20.createElement)(
@@ -8677,6 +9091,10 @@ function CreateBot({ roster, actions, start, brief = "", onBack, canGoBack, onCr
       (0, import_react20.createElement)(CharacterGrid, {
         look,
         hasPhoto: Boolean(image),
+        onFace: (face) => {
+          setImage(null);
+          setLook((current) => ({ ...current, face }));
+        },
         onShape: (shape) => {
           setImage(null);
           setLook((current) => ({ ...current, shape }));
@@ -14716,7 +15134,7 @@ function apply(ctx) {
     controller.toggleSource(CHATS_SOURCE, { trigger: "@", query: "", quoted: false, position: "inline", span });
   };
   const installShell = () => [
-    () => installCompiledStyles(SHELL_CSS + NATIVE_SHELL_CSS, "shell"),
+    () => installCompiledStyles(SHELL_CSS + NATIVE_SHELL_CSS + COMPANION_CSS, "shell"),
     () => installCompiledStyles(SIDEBAR_CSS, "sidebar"),
     () => installCompiledStyles(SECRET_CSS, "secrets"),
     () => installCompiledStyles(MODEL_CSS + FOLDER_CSS + BOT_SETTINGS_CSS + GROUP_SETTINGS_CSS, "models"),
@@ -14735,7 +15153,7 @@ function apply(ctx) {
     () => shadow("shell.overlay", { id: "bot-toast", order: 60, inject: face }, ErrorToast)
   ];
   const installConversation = () => [
-    () => installCompiledStyles(CONVERSATION_CSS + NATIVE_CONVERSATION_CSS, "conversation"),
+    () => installCompiledStyles(CONVERSATION_CSS + NATIVE_CONVERSATION_CSS + COMPANION_CHAT_CSS, "conversation"),
     () => installMentions(),
     () => installAtMenu(),
     () => shadow("conversation.session.header.actions", { id: "bot-details", order: 100, inject: face }, NativeBotDetails),

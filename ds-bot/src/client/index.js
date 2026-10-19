@@ -5,6 +5,7 @@ import { createSource, EMPTY_ROSTER, indexRoster, isAgentSession } from './sourc
 import { teamActions } from './team-actions.js'
 import { themeCss, nativeAccentCss, shellTokens, registry, registerShape, registerTheme, allThemes } from './themes.js'
 import { MENTION_ORIGIN, currentPart } from './text.js'
+import { COMPANION_CSS, COMPANION_CHAT_CSS } from './companion-theme.js'
 import { SHELL_CSS, CONVERSATION_CSS, installStyles, installCompiledStyles } from './styles.js'
 import { lookOf } from './mark.js'
 import { TeamSidebar, SIDEBAR_CSS, holdShellShortcuts, openHarnessOnboarding, openHarnessSettings } from './sidebar.js'
@@ -615,7 +616,7 @@ export function apply(ctx) {
   // group re-skins the session itself. Each step returns a disposer from slots.inject,
   // so a surface change withdraws the whole group and the outlets re-render.
   const installShell = () => [
-    () => installCompiledStyles(SHELL_CSS + NATIVE_SHELL_CSS, 'shell'),
+    () => installCompiledStyles(SHELL_CSS + NATIVE_SHELL_CSS + COMPANION_CSS, 'shell'),
     () => installCompiledStyles(SIDEBAR_CSS, 'sidebar'),
     () => installCompiledStyles(SECRET_CSS, 'secrets'),
     () => installCompiledStyles(MODEL_CSS + FOLDER_CSS + BOT_SETTINGS_CSS + GROUP_SETTINGS_CSS, 'models'),
@@ -634,7 +635,7 @@ export function apply(ctx) {
     () => shadow('shell.overlay', { id: 'bot-toast', order: 60, inject: face }, ErrorToast),
   ]
   const installConversation = () => [
-    () => installCompiledStyles(CONVERSATION_CSS + NATIVE_CONVERSATION_CSS, 'conversation'),
+    () => installCompiledStyles(CONVERSATION_CSS + NATIVE_CONVERSATION_CSS + COMPANION_CHAT_CSS, 'conversation'),
     () => installMentions(),
     () => installAtMenu(),
     () => shadow('conversation.session.header.actions', { id: 'bot-details', order: 100, inject: face }, NativeBotDetails),

@@ -27,3 +27,9 @@ test('the suggested name skips taken names', () => {
   assert.equal(freshBotName(roster, 'Kimi'), 'Kimi 2')
   assert.equal(freshBotName(roster, 'Writer'), 'Writer')
 })
+
+test('the selected expression is stored alongside the shape and survives a photo choice', () => {
+  const look = { shape: 'soft-square', color: '#69C7B7', face: 'curious' }
+  assert.deepEqual(createPayload({ name: 'A', look, image: 'data:image/png;base64,AA' }).avatar,
+    { shape: 'soft-square', face: 'curious', image: 'data:image/png;base64,AA' })
+})

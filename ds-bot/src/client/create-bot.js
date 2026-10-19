@@ -1,7 +1,8 @@
 import { createElement as h, useEffect, useRef, useState } from 'react'
+import { inkFill } from './inks.js'
 import { BotMark } from './mark.js'
 import { CharacterGrid, avatarImage } from './bot-settings.js'
-import { DEFAULT_SHAPES, DEFAULT_COLORS } from './characters.js'
+import { COMPANION_SHAPES, COMPANION_COLORS } from './companion-shapes.js'
 import { ChevronLeftIcon, CloseIcon } from './icons.js'
 import { useEscape } from './overlay-hooks.js'
 import { createPayload, freshBotName, startModel } from './bot-draft.js'
@@ -11,15 +12,16 @@ import { nameProblem } from '../shared/mentions.js'
 
 const pick = list => list[Math.floor(Math.random() * list.length)]
 const randomLook = (avoid = {}) => {
-  const shapes = DEFAULT_SHAPES.filter(shape => shape !== avoid.shape)
-  const colors = DEFAULT_COLORS.filter(color => color !== avoid.color)
-  return { shape: pick(shapes), color: pick(colors) }
+  const shapes = COMPANION_SHAPES.filter(shape => shape !== avoid.shape)
+  const colors = COMPANION_COLORS.filter(color => color !== avoid.color)
+  return { shape: pick(shapes), color: pick(colors), face: avoid.face ?? 'calm' }
 }
 
 // The new-Bot form: look first, then name and model. Nothing exists until Create.
 // `inline` drops the pane's header for a form shown inside Settings.
 export function CreateBot({ roster, actions, start, brief = '', onBack, canGoBack, onCreated, inline = false }) {
   const [look, setLook] = useState(() => randomLook())
+  const [previewState, setPreviewState] = useState('idle')
   const [image, setImage] = useState(null)
   const [name, setName] = useState(start?.name ?? '')
   const [model, setModel] = useState(() => startModel(roster))
@@ -54,15 +56,21 @@ export function CreateBot({ roster, actions, start, brief = '', onBack, canGoBac
   }
   const previewLook = image ? { ...look, image } : look
   const card = h('div', { className: 'bt-create-card' },
-    h('div', { className: 'bt-create-preview' },
+    h('div', { className: 'bt-create-preview', style: { '--bt-companion-color': inkFill(look.color) } },
       // The key remounts the mark, so every new pick plays the pop.
       h('span', { key: `${look.shape}:${look.color}:${image ? 'photo' : ''}`, className: 'bt-create-pop' },
-        h(BotMark, { look: previewLook, bot: { id: 'new-bot' }, size: 88, live: true, gaze: true, pokeable: true })),
-      h('span', { className: 'bt-create-name' }, finalName)),
+        h(BotMark, { look: previewLook, bot: { id: 'new-bot' }, size: 144, state: previewState, live: true, gaze: true, pokeable: true })),
+      h('span', { className: 'bt-create-name' }, finalName),
+      h('p', { className: 'bt-preview-hint' }, t('A little companion, with a job of its own.')),
+      h('div', { className: 'bt-preview-states', role: 'group', 'aria-label': t('Preview animation') },
+        [['idle', 'At ease'], ['working', 'Working'], ['alert', 'Needs you'], ['done', 'Has news'], ['sleeping', 'Resting'], ['watching', 'Looking out']].map(([id, label]) =>
+          h('button', { key: id, type: 'button', 'aria-pressed': previewState === id, onClick: () => setPreviewState(id) }, t(label)))),
+      h('p', { className: 'bt-preview-note' }, t('Try the states. Move closer, or give it a gentle tap.'))),
     h('div', { className: 'bt-create-step' }, t('Look')),
     h('div', { className: 'bt-create-looks' },
       h(CharacterGrid, {
         look, hasPhoto: Boolean(image),
+        onFace: (face) => { setImage(null); setLook(current => ({ ...current, face })) },
         onShape: (shape) => { setImage(null); setLook(current => ({ ...current, shape })) },
         onColor: (color) => { setImage(null); setLook(current => ({ ...current, color })) },
       }),

@@ -1,5 +1,6 @@
 import { createElement as h, useEffect, useRef, useState } from 'react'
 import { fnv1a, lookOf, shapeId, shapeOf, MASK_ID, nextMarkSerial, characterMarkup } from './characters.js'
+import { installCharacterMotion } from './character-motion.js'
 import { t } from './i18n.js'
 
 export { colorOf, lookOf } from './characters.js'
@@ -10,7 +11,7 @@ export { colorOf, lookOf } from './characters.js'
 // Mascot states: what the Bot is doing picks the
 // motion. Uploaded images only bob or hop, since they have no parts to move. `waiting`:
 // no turn runs, but work it handed on has not come back yet.
-const STATES = ['idle', 'thinking', 'searching', 'working', 'sending', 'orbit', 'waiting', 'alert', 'done']
+const STATES = ['idle', 'thinking', 'searching', 'working', 'sending', 'orbit', 'waiting', 'alert', 'done', 'sleeping', 'watching']
 export const botState = (running, activity, alert) => (running ? (STATES.includes(activity) && activity !== 'waiting' ? activity : 'working')
   : alert ? 'alert' : activity === 'waiting' ? 'waiting' : 'idle')
 export const toolState = name => (/^(message_bot|stop_bot|create_bot|update_bot|create_group|update_group|delete_group|post_to_group)$/.test(name) ? 'sending'
@@ -44,36 +45,39 @@ function useGaze(ref, enabled) {
 }
 
 // A mark moves for its state. `live` marks (sidebar, header, details) also answer the
-// pointer, and at the lively motion level blink and fidget at rest (each Bot its own
-// fidget and moment); transcript marks stay still so a long chat does not run dozens
-// of animations.
+// pointer. The organic motion layer pauses offscreen and respects the user's
+// motion preference; plain picker thumbnails remain still.
 const FIDGETS = ['hop', 'sway', 'stretch', 'look']
 export function BotMark({ bot, look: given, size = 36, state = 'idle', live = false, gaze = false, pokeable = false, label }) {
   const look = given ?? lookOf(bot)
   const ref = useRef(null)
   const maskId = useRef('')
   if (maskId.current === '') maskId.current = `bt-mark-${nextMarkSerial()}`
-  const [poked, setPoked] = useState(false)
-  useGaze(ref, gaze)
+  useGaze(ref, gaze || (live && size >= 32))
+  useEffect(() => {
+    if (!(live || pokeable) || !ref.current) return undefined
+    return installCharacterMotion(ref.current, { seed: fnv1a(String(bot?.id ?? 'preview')), state, interactive: live || pokeable })
+  }, [live, pokeable, state, look.shape, look.image, look.color, look.face])
   const common = {
     ref,
-    className: poked ? 'bt-mark bt-mark-poke' : 'bt-mark',
+    className: 'bt-mark',
     'data-shape': look.image ? 'image' : shapeId(look.shape),
     'data-state': STATES.includes(state) ? state : 'idle',
     'data-live': live ? '' : undefined,
     'data-fidget': live ? FIDGETS[fnv1a(`${bot?.id ?? ''}:fidget`) % FIDGETS.length] : undefined,
-    'data-gaze': gaze ? '' : undefined,
+    'data-gaze': gaze || (live && size >= 32) ? '' : undefined,
+    'data-companion': shapeOf(look.shape).companion ? '' : undefined,
     'data-poke': pokeable ? '' : undefined,
     style: { width: size, height: size, ...(live ? { '--bt-delay': `${-(fnv1a(String(bot?.id ?? '')) % 5000) / 1000}s`, '--bt-fidget-delay': `${-(fnv1a(`${bot?.id ?? ''}:when`) % 9000) / 1000}s` } : {}) },
-    role: label ? 'img' : undefined,
-    'aria-label': label,
-    'aria-hidden': label ? undefined : true,
-    onClick: pokeable ? () => setPoked(true) : undefined,
-    onAnimationEnd: poked ? (event) => { if (/^bt-poke/.test(event.animationName)) setPoked(false) } : undefined,
+    role: pokeable ? 'button' : label ? 'img' : undefined,
+    tabIndex: pokeable ? 0 : undefined,
+    'aria-label': pokeable ? label ?? t('Play with this Bot') : label,
+    'aria-hidden': label || pokeable ? undefined : true,
   }
   if (look.image) return h('span', common, h('img', { className: 'bt-mark-img', src: look.image, alt: '', draggable: false }))
   const box = shapeOf(look.shape).size
-  return h('span', common, h('svg', { viewBox: `0 0 ${box} ${box}`, dangerouslySetInnerHTML: { __html: characterMarkup(look.shape, look.color).replaceAll(MASK_ID, maskId.current) } }))
+  const aura = `<g class="bt-character-aura" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><g class="bt-mood-spark"><path d="M84 8L86 14L92 16L86 18L84 24L82 18L76 16L82 14Z" stroke-width="1.8"/></g><g class="bt-mood-orbit"><circle cx="10" cy="49" r="2" fill="currentColor" stroke="none"/><circle cx="90" cy="49" r="2" fill="currentColor" stroke="none"/></g><g class="bt-mood-rest" stroke-width="2.2"><path d="M76 21H83L76 28H83"/><path d="M87 9H94L87 16H94"/></g></g>`
+  return h('span', common, h('svg', { viewBox: `0 0 ${box} ${box}`, dangerouslySetInnerHTML: { __html: characterMarkup(look.shape, look.color, look.face).replaceAll(MASK_ID, maskId.current) + aura } }))
 }
 
 function StarIcon({ size = 8 }) {

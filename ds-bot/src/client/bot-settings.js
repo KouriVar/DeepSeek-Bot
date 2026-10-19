@@ -1,6 +1,8 @@
 import { createElement as h, Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { paintCss } from './inks.js'
 import { CHARACTERS, PICKER_SHAPES, PICKER_COLUMNS, CHARACTER_COLORS, SHAPES, hasShape, shapeOf, bodyOf, maskBox, holes, nextMarkSerial } from './characters.js'
+import { COMPANION_COLORS, COMPANION_SHAPES } from './companion-shapes.js'
+import { AVATAR_FACES } from '../shared/avatar.js'
 import { isMainOf } from './sources.js'
 import { PencilIcon, ChevronRightIcon } from './icons.js'
 import { lookOf, BotMark } from './mark.js'
@@ -102,20 +104,30 @@ function ShapeRing({ shape, size }) {
 }
 
 // Every character shape, six to a row, then the color swatches.
-export function CharacterGrid({ look, hasPhoto = false, onShape, onColor }) {
-  const shapes = [...PICKER_SHAPES, ...Object.keys(SHAPES).filter(id => !Object.hasOwn(CHARACTERS, id))]
-  if (!shapes.includes(look.shape)) shapes.push(look.shape)
-  const rows = []
-  for (let index = 0; index < shapes.length; index += PICKER_COLUMNS) rows.push(shapes.slice(index, index + PICKER_COLUMNS))
-  return h(Fragment, null,
-    h('div', { className: 'bt-shapes', role: 'group', 'aria-label': t('Character shape') }, rows.map((row, index) => h('div', { key: index, className: 'bt-shape-row' }, row.map(id => h('button', {
-      key: id, type: 'button', className: 'bt-shape', 'aria-label': t(shapeOf(id).label), title: t(shapeOf(id).label), 'aria-pressed': !hasPhoto && look.shape === id,
-      onClick: () => onShape(id),
-    }, h(ShapeRing, { shape: id, size: 36 }), h(BotMark, { look: { shape: id, color: look.color }, size: 36 })))))),
-    h('div', { className: 'bt-colors', role: 'group', 'aria-label': t('Character color') }, CHARACTER_COLORS.map(color => h('button', {
-      key: color, type: 'button', className: 'bt-color', 'aria-label': t(capitalize(color)), title: t(capitalize(color)), 'aria-pressed': look.color === color,
-      onClick: () => onColor(color),
-    }, h('span', { style: { background: paintCss(color) } })))))
+export function CharacterGrid({ look, hasPhoto = false, onShape, onColor, onFace }) {
+  const modern = COMPANION_SHAPES.includes(look.shape)
+  const extra = Object.keys(SHAPES).filter(id => !PICKER_SHAPES.includes(id))
+  const classic = [...Object.keys(CHARACTERS), ...extra]
+  const shapeButtons = shapes => h('div', { className: 'bt-shape-row' }, shapes.map(id => h('button', {
+    key: id, type: 'button', className: 'bt-shape', 'aria-label': t(shapeOf(id).label), title: t(shapeOf(id).label), 'aria-pressed': !hasPhoto && look.shape === id,
+    onClick: () => onShape(id),
+  }, h(ShapeRing, { shape: id, size: 32 }), h(BotMark, { look: { shape: id, color: look.color, face: look.face }, size: 32 }))))
+  return h('div', { className: 'bt-appearance' },
+    h('div', { className: 'bt-look-row' }, h('span', { className: 'bt-look-label' }, t('Color')),
+      h('div', { className: 'bt-colors', role: 'group', 'aria-label': t('Character color') }, (modern ? COMPANION_COLORS : CHARACTER_COLORS).map(color => h('button', {
+        key: color, type: 'button', className: 'bt-color', 'aria-label': color.startsWith('#') ? color : t(capitalize(color)), title: color.startsWith('#') ? color : t(capitalize(color)), 'aria-pressed': look.color === color,
+        onClick: () => onColor(color),
+      }, h('span', { style: { background: paintCss(color) } }))))),
+    h('div', { className: 'bt-look-row' }, h('span', { className: 'bt-look-label' }, t('Shape')),
+      h('div', { className: 'bt-shapes', role: 'group', 'aria-label': t('Character shape') }, shapeButtons(COMPANION_SHAPES))),
+    onFace ? h('div', { className: 'bt-look-row' }, h('span', { className: 'bt-look-label' }, t('Face')),
+      h('div', { className: 'bt-faces', role: 'group', 'aria-label': t('Character face') }, AVATAR_FACES.map(face => h('button', {
+        key: face, type: 'button', className: 'bt-face-choice', 'aria-label': t(`Face: ${face}`), title: t(`Face: ${face}`), 'aria-pressed': (look.face ?? 'calm') === face,
+        onClick: () => onFace(face),
+      }, h(BotMark, { look: { shape: 'soft-square', color: look.color, face }, size: 32 }))))) : null,
+    h('details', { className: 'bt-legacy-looks', open: !modern && !hasPhoto },
+      h('summary', null, t('Original characters')),
+      h('div', { className: 'bt-shapes' }, Array.from({ length: Math.ceil(classic.length / PICKER_COLUMNS) }, (_, index) => h(Fragment, { key: index }, shapeButtons(classic.slice(index * PICKER_COLUMNS, (index + 1) * PICKER_COLUMNS)))))))
 }
 
 // The avatar editor: the Bot tab picks a character (every click saves), the
@@ -161,7 +173,8 @@ function AvatarEditor({ bot, actions, run, onClose }) {
       }, t('Reset'))),
     tab === 'bot' ? h(CharacterGrid, {
       look, hasPhoto,
-      onShape: shape => run(actions.updateBot(bot.id, { avatar: { shape } })),
+      onShape: shape => run(actions.updateBot(bot.id, { avatar: { shape, ...(look.face ? { face: look.face } : {}) } })),
+      onFace: face => run(actions.updateBot(bot.id, { avatar: { shape: look.shape, face } })),
       onColor: color => run(actions.updateBot(bot.id, { color })),
     }) : null,
     tab === 'upload' ? h('div', {

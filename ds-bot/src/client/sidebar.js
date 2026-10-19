@@ -3,8 +3,8 @@ import { createPortal } from 'react-dom'
 import { FishLogo } from './dsh-primitives.js'
 import { isMainOf } from './sources.js'
 import { currentPart, previewOf, relativeShort } from './text.js'
-import { PlusIcon, SearchIcon, SidebarIcon, GaugeIcon, PlugIcon, ClockIcon, GearIcon, PinMarkIcon, ConnectorIcon, SwitchIcon, CloudDownloadIcon, PeopleIcon, ChatsIcon } from './icons.js'
-import { botState } from './mark.js'
+import { PlusIcon, SearchIcon, SidebarIcon, GaugeIcon, PlugIcon, ClockIcon, GearIcon, PinMarkIcon, ConnectorIcon, SwitchIcon, CloudDownloadIcon } from './icons.js'
+import { botState, BotAvatar, RoomAvatar } from './mark.js'
 import { reducedMotion } from './activity-row.js'
 import { Shimmer, workPhrase } from './cells.js'
 import { springEasing, SPRING_SHAPE } from './motion.js'
@@ -71,13 +71,13 @@ function BotRow({ bot, roster, actions, useSessions, useSessionStatus, useSessio
     type: 'button', className: 'bt-row', 'aria-label': label, 'aria-current': active ? 'page' : undefined,
     'data-bot-id': id, title: wide ? preview || bot.role || bot.name : bot.name, onClick: () => actions.openSession(id), onContextMenu,
   },
-  h('span', { className: 'bt-nav-icon', 'data-state': running || away ? 'working' : alert ? 'alert' : 'idle', 'aria-hidden': true }, h(PeopleIcon)),
+  h(BotAvatar, { bot, size: 24, state, badge: false, live: true }),
   pinned && !wide ? h(PinMark) : null,
   wide ? h('span', { className: 'bt-row-body' },
     h('span', { className: 'bt-row-name' }, h('span', { className: 'bt-row-title' }, bot.name), main ? h('span', { className: 'bt-nav-role' }, t('Main Bot')) : null, pinned ? h(PinMark) : null),
     awayLine ? h('span', { className: 'bt-row-preview' }, awayLine)
       : waitsFor ? h('span', { className: 'bt-row-preview' }, waitsFor)
-        : null) : null,
+        : bot.role && bot.role.trim() !== bot.name.trim() ? h('span', { className: 'bt-row-preview' }, bot.role) : null) : null,
   wide && unread && !active ? h('span', { className: 'bt-unread', 'aria-hidden': true }) : null)
 }
 
@@ -100,7 +100,7 @@ function RoomRow({ room, roster, actions, useSessions, useSessionStatus, useSess
     'data-room-id': id, title: preview || room.name, onClick: () => actions.openSession(id),
     onContextMenu: (event) => { event.preventDefault(); actions.openMenu({ kind: 'room', id, x: event.clientX, y: event.clientY }) },
   },
-  h('span', { className: 'bt-nav-icon', 'aria-hidden': true }, h(ChatsIcon)),
+  h(RoomAvatar, { room, roster, size: 24 }),
   pinned && !wide ? h(PinMark) : null,
   wide ? h('span', { className: 'bt-row-body' },
     h('span', { className: 'bt-row-name' }, h('span', { className: 'bt-row-title' }, room.name), pinned ? h(PinMark) : null),
