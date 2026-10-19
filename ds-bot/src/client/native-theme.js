@@ -78,7 +78,10 @@ export const NATIVE_CONVERSATION_CSS = `
 .bt-group-msg .bt-msg-line>.bt-bubble{padding:0;line-height:calc(var(--dsh-content-font-size,14px) + 10px)}
 .bt-group-msg .bt-msg{padding-bottom:0}
 .bt-group-msg .bt-msg-line>.bt-tools{top:-30px;bottom:auto;right:0;z-index:2;padding:2px;border:1px solid var(--bt-line);border-radius:8px;background:var(--bt-main);box-shadow:var(--dsw-elevation-soft)}
-.bt-group-msg .bt-astack{gap:12px}
+.bt-group-msg .bt-astack{gap:16px}
+.bt-group-msg .bt-bubble [class*="_markdown"]>*+*{margin-top:16px}
+/* Group prose is a reading block, not another compact tool-list row. */
+[data-chat-flow-kind=tool-call]:has(.bt-group-replies),[data-chat-flow-kind=turn-trigger]:has(.bt-group-msg){margin-block:16px!important}
 .bt-bubble [class*="_markdown"]>*+*{margin-top:14px}
 .bt-ubody{border-radius:var(--dsw-radius-md,12px);padding:10px 16px;line-height:1.6}
 .bt-plus{border-radius:var(--dsw-radius-sm,8px);background:none;box-shadow:none}

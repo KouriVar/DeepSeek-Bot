@@ -127,3 +127,17 @@ use that same outer edge. Existing typography and contextual actions remain.
 Validation: 655 tests, lint and generated-client check passed. Browser bounds
 confirm a 28px avatar, identical avatar/body x coordinates and a shared header y
 coordinate for each sender. Installed and checked the existing Desktop group.
+
+Version `0.1.7-halfsignal.8` uses 24px circular sender avatars, including uploaded
+photos and generated characters. The sender name and role remain on the header
+row, with the body aligned to the avatar's left edge. Header-to-body spacing is
+12px; paragraphs, stacked content and work notices use a 16px rhythm. Adjacent
+messages from different members have 32px separation. Group reply blocks have
+16px outer flow margins so they do not inherit the native tool list's compact
+6px spacing. Native body line height and normal tool-list spacing stay in place.
+
+Validation: 655 tests, lint and generated-client check passed. In the isolated
+dark-theme group, browser bounds confirm 24px square circular avatars, a 12px
+header/body gap and 32px separation between members. Installed through the
+Desktop plugin CLI and visually checked the existing light-theme group's long
+reply, uploaded photo, tool metadata and work notice.
