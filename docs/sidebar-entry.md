@@ -96,3 +96,25 @@ Validation: 654 tests, lint and generated-client check passed. Browser bounds in
 the isolated two-member group show identical name/body x coordinates and 24px
 avatars aligned with the name row. Installed the package into Desktop and
 checked the existing group's long reply and work notice visually.
+
+## Group typography refinement
+
+Version `0.1.7-halfsignal.6` takes layout cues from the following Mobbin references:
+
+- [Tana chat](https://mobbin.com/screens/d12e7ed6-153a-4ed4-b61e-b3da75bbbfca): a clear sender header above readable long-form replies.
+- [hilos conversation](https://mobbin.com/screens/5d4dd59c-c9f9-4085-bc6a-3c90fbcdbccc): avatars establish identity, secondary metadata stays quiet, and contextual actions float above messages.
+
+These are visual references; no third-party graphics or component code are
+included in the plugin. The implementation keeps Harness typography and colors,
+using 32px avatars with a 12px gutter, 13px semibold sender names, lighter 11px
+role metadata and a 24px body line height at the default 14px content size. The
+hover toolbar floats above the message instead of requiring a permanent footer
+gap. Within one group round, a work notice can separate two messages from the
+same sender without repeating its header; a user message or another sender
+starts a fresh header. Separate turns and late posts remain distinct.
+
+Validation: 655 tests, lint and generated-client check passed. Checked the dark
+mock-backed group and the signed-in Desktop group's long reply in the light
+theme, including role text, work notices and the floating hover toolbar. Reviewed
+a contact sheet of the reference, current screen and before/after captures.
+Installed through the official Desktop plugin CLI.

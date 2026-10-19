@@ -202,11 +202,11 @@ function EventLine({ prefix, bots, joiner = t('and'), onOpen, whole = false }) {
 }
 
 // One Bot message inside a group chat: avatar, name (with its group role), bubble.
-function GroupMessage({ bot, text, texts = [text], room, roster, actions, msgKey, useUi, whole }) {
+function GroupMessage({ bot, text, texts = [text], room, roster, actions, msgKey, useUi, whole, continuation = false }) {
   const lead = h('button', { type: 'button', className: 'bt-lead', 'aria-label': t("Open {name}'s chat", { name: bot.name }), onClick: () => actions.openSession(bot.id) },
-    h(BotMark, { bot, size: 24 }))
-  return h('div', { className: 'bt-group-msg' }, lead,
-    h('span', { className: 'bt-group-name' }, bot.name,
+    h(BotMark, { bot, size: 32 }))
+  return h('div', { className: 'bt-group-msg', 'data-continuation': continuation || undefined }, continuation ? null : lead,
+    continuation ? null : h('span', { className: 'bt-group-name' }, bot.name,
       room?.admin === bot.id ? h('span', { className: 'bt-group-role' }, t('Admin')) : null),
     h(Bubbles, { texts, roster, selfId: bot.id, actions, sessionId: room?.id, msgKey, useUi, whole }))
 }
@@ -215,10 +215,14 @@ function GroupMessage({ bot, text, texts = [text], room, roster, actions, msgKey
 // works comes one message at a time.
 export function stackReplies(replies) {
   const items = []
+  let speaker
   replies.forEach((reply, index) => {
     const last = items.at(-1)
+    const continuation = speaker !== undefined && speaker === reply.botId
     if (reply.kind === undefined && last?.reply.kind === undefined && last?.reply.botId === reply.botId) last.texts.push(reply.text)
-    else items.push({ reply, index, texts: reply.kind === undefined ? [reply.text] : [] })
+    else items.push({ reply, index, texts: reply.kind === undefined ? [reply.text] : [], continuation: reply.kind === undefined && continuation })
+    if (reply.kind === undefined) speaker = reply.botId
+    else if (!continuation || !['working', 'done', 'approval', 'lookup'].includes(reply.kind)) speaker = undefined
   })
   return items
 }
@@ -656,7 +660,7 @@ function GroupReplies({ sessionId, callId, done, content, roster, actions, useUi
   if (replies.length === 0 && pending.length === 0) return null
   const room = roster.roomsById[sessionId]
   return h('div', { className: 'bt-group-replies' },
-    stackReplies(replies).map(({ reply, index, texts }) => {
+    stackReplies(replies).map(({ reply, index, texts, continuation }) => {
       const bot = roster.byId[reply.botId] ?? { id: reply.botId, name: reply.name, color: reply.color ?? 'gray' }
       if (reply.kind === 'user') {
         return h('div', { key: `user-${index}`, className: 'bt-urow' }, h('div', { className: 'bt-ububble' },
@@ -690,13 +694,13 @@ function GroupReplies({ sessionId, callId, done, content, roster, actions, useUi
       if (reply.kind === 'done') {
         return h('div', { key: `${reply.botId}-${index}`, className: 'bt-event' }, t('{name} finished its work', { name: bot.name }))
       }
-      return h(GroupMessage, { key: `${reply.botId}-${index}`, bot, texts, room, roster, actions, msgKey: callId ? `${sessionId}:${callId}:${index}` : undefined, useUi })
+      return h(GroupMessage, { key: `${reply.botId}-${index}`, bot, texts, continuation, room, roster, actions, msgKey: callId ? `${sessionId}:${callId}:${index}` : undefined, useUi })
     }),
     pending.map((id) => {
       const bot = roster.byId[id]
       if (!bot) return null
       return h('div', { key: `pending-${id}`, className: 'bt-activity' },
-        h(BotMark, { bot: bot, size: 24, state: speakerTool ? toolState(speakerTool) : 'thinking' }),
+        h(BotMark, { bot: bot, size: 32, state: speakerTool ? toolState(speakerTool) : 'thinking' }),
         h(Shimmer, null, speakerDoing ? `${bot.name} · ${speakerDoing}…` : t('{name} is typing…', { name: bot.name })))
     }))
 }

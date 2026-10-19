@@ -95,6 +95,17 @@ test('a member\'s messages in a row stack under its name, and an event line star
   assert.deepEqual(JSON.parse(JSON.stringify(stackReplies(replies).map(item => [item.index, item.texts]))), [[0, ['a', 'b']], [2, []], [3, ['c']], [4, ['d']], [5, ['e']]])
 })
 
+test('a work notice keeps the same sender header, while another speaker or user starts a new one', () => {
+  const replies = [
+    { botId: 'writer', text: 'Draft' }, { kind: 'working', botId: 'writer' },
+    { botId: 'writer', text: 'Result' }, { botId: 'chief', text: 'Review' },
+    { botId: 'writer', text: 'Revision' }, { kind: 'user', text: 'New request' },
+    { botId: 'writer', text: 'New answer' },
+  ]
+  const continuation = stackReplies(replies).map(item => item.continuation)
+  assert.deepEqual(JSON.parse(JSON.stringify(continuation)), [false, false, true, false, false, false, false])
+})
+
 const props = (root, { sessionId = chief.id, roster = team(), actions = {}, turn = 1 } = {}) => ({
   node: { key: 'node', data: { root }, location: { turn: { turn } } }, sessionId,
   useRoster: select => select(roster), useUi: select => select({ reactions: {}, visits: {} }), actions,
