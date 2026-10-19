@@ -75,6 +75,9 @@ export const NATIVE_CONVERSATION_CSS = `
 .bt-msg-line>.bt-tools{left:auto;right:0;bottom:-22px;top:auto;transform:none}
 .bt-msg-line>.bt-bubble{flex:1;padding:4px 0;border:0;border-radius:0;background:none;line-height:1.7}
 .bt-msg-tools{align-self:flex-end}
+.bt-group-msg .bt-msg-line>.bt-bubble{padding:0;line-height:calc(var(--dsh-content-font-size,14px) + 8px)}
+.bt-group-msg .bt-msg{padding-bottom:0}
+.bt-group-msg .bt-msg:last-child{padding-bottom:24px}
 .bt-bubble [class*="_markdown"]>*+*{margin-top:14px}
 .bt-ubody{border-radius:var(--dsw-radius-md,12px);padding:10px 16px;line-height:1.6}
 .bt-plus{border-radius:var(--dsw-radius-sm,8px);background:none;box-shadow:none}

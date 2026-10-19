@@ -84,3 +84,15 @@ isolated mock-backed Web profile, sent a group message with `@所有人`, verifi
 both members' replies and reopened the group details panel. Installed the package
 into the existing Desktop profile with the official CLI and checked the restored
 native controls in Bot mode.
+
+Version `0.1.7-halfsignal.5` aligns group messages with a fixed 24px avatar column
+and an 8px gutter. Names, administrator badges and every paragraph share the
+same content column, including consecutive messages from one member. Group work
+and approval notices align with that column instead of centering in the page.
+Names use the active theme's text color; member identity remains in the avatar.
+The tool headers and native conversation controls keep their existing geometry.
+
+Validation: 654 tests, lint and generated-client check passed. Browser bounds in
+the isolated two-member group show identical name/body x coordinates and 24px
+avatars aligned with the name row. Installed the package into Desktop and
+checked the existing group's long reply and work notice visually.

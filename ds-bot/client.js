@@ -2216,13 +2216,15 @@ body[data-bt-motion=quiet] .bt-mark[data-poke]{cursor:default}
 .bt-bubble ul,.bt-bubble ol{margin:4px 0;padding-left:20px}
 .bt-bubble a[href^="${MENTION_ORIGIN}"]{text-decoration:none;font-weight:400;cursor:pointer;white-space:nowrap}
 .bt-bubble a[href^="${MENTION_ORIGIN}"]::before{content:"";display:inline-block;width:16px;height:16px;margin-right:3px;vertical-align:-3px;background:currentColor;-webkit-mask:${DEFAULT_MASK} center/contain no-repeat;mask:${DEFAULT_MASK} center/contain no-repeat}
-.bt-group-msg{display:flex;flex-direction:column;gap:4px;margin:16px 0 0}
+.bt-group-msg{display:grid;grid-template-columns:24px minmax(0,1fr);column-gap:8px;row-gap:4px;align-items:start;margin:16px 0 0}
 .bt-group-msg:first-child{margin-top:0}
 .bt-lead{flex:none;display:flex;margin-bottom:1px}
 button.bt-lead{border:0;background:none;padding:0;cursor:pointer}
 /* Rows without the avatar start where the bubble beside it starts: 22px avatar + 8px gap. */
 .bt-astack[data-lead]>.bt-msg:not(:last-child)>.bt-msg-line,.bt-astack[data-lead] .bt-reacts{margin-left:30px}
-.bt-group-name{font-size:12px;line-height:16px;font-weight:500;margin-left:42px}
+.bt-group-msg>.bt-lead{grid-column:1;grid-row:1/span 2;align-items:center;justify-content:center;width:24px;height:24px;margin:0}
+.bt-group-name{grid-column:2;display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-width:0;min-height:24px;margin:0;font-size:13px;line-height:20px;font-weight:500;color:var(--bt-ink)}
+.bt-group-msg>.bt-astack{grid-column:2;min-width:0;width:100%}
 .bt-x{border:0;background:none;color:var(--bt-ink-2);cursor:pointer;width:24px;height:24px;border-radius:6px;font-size:16px;line-height:24px;padding:0;transition:background-color .12s ease,color .12s ease,${spring(SPRING_TAP, "scale")}}
 .bt-x:hover{background:var(--bt-hover);color:var(--bt-ink)}
 
@@ -2682,7 +2684,7 @@ body[data-ds-dark-theme] .bt-theme-chip{background:linear-gradient(90deg,var(--d
 body[data-ds-dark-theme] .bt-theme-chip i{background:var(--da)}
 .bt-tabs{flex-wrap:wrap}
 .bt-soft:disabled{opacity:.4;cursor:default}
-.bt-group-role{margin-left:6px;font-size:11px;line-height:14px;padding:1px 5px;border-radius:4px;background:var(--bt-tag-bg);color:var(--bt-tag-ink);vertical-align:1px}
+.bt-group-role{display:inline-flex;align-items:center;margin:0;font-size:11px;line-height:14px;padding:1px 5px;border-radius:4px;background:var(--bt-tag-bg);color:var(--bt-tag-ink);vertical-align:1px}
 .bt-mini{flex:none;border:0;background:none;border-radius:6px;padding:2px 6px;font:inherit;font-size:12px;line-height:18px;color:var(--bt-ink-2);cursor:pointer}
 .bt-mini:hover{background:var(--bt-active);color:var(--bt-ink)}
 .bt-add{color:var(--bt-ink-2);margin-top:2px}
@@ -2827,7 +2829,12 @@ var CONVERSATION_CSS = `
 .bt-time-sep{display:flex;justify-content:center;align-items:center;height:28px;margin:14px 0 8px;font-size:12px;line-height:16px;color:var(--bt-ink-2);white-space:nowrap}
 [class*="_scroll"]>[class*="_column"]::before{content:var(--bt-first-sep,none);display:block;flex:none;height:28px;margin:17px 0 12px;font-size:12px;line-height:28px;text-align:center;color:var(--bt-ink-2);white-space:nowrap}
 .bt-activity{display:flex;align-items:center;gap:10px;margin:8px 0 4px 2px;font-size:14px;color:var(--bt-ink-2)}
-.bt-group-replies{display:contents}
+.bt-group-replies{display:flex;flex-direction:column;gap:16px;min-width:0;width:100%}
+.bt-group-replies>.bt-group-msg{margin:0}
+.bt-group-replies>.bt-event{justify-content:flex-start;box-sizing:border-box;padding-inline-start:32px;margin:0;min-height:24px;line-height:18px}
+.bt-group-replies>.bt-event button.bt-event-whole{padding:0;border-radius:4px;height:auto;min-height:24px}
+.bt-group-replies>.bt-activity{gap:8px;margin:0;min-height:24px}
+.bt-group-replies>.bt-activity>.bt-mark{flex:none}
 /* Empty coordination nodes take no transcript space. */
 [class*="_flowItem"]:has(> [data-slot="conversation.chat.node"]:empty){display:none!important}
 /* Group replies remain visible when the native work-details mode folds tools. */
@@ -4233,18 +4240,19 @@ function GroupMessage({ bot, text, texts: texts2 = [text], room: room2, roster, 
   const lead = (0, import_react7.createElement)(
     "button",
     { type: "button", className: "bt-lead", "aria-label": t("Open {name}'s chat", { name: bot.name }), onClick: () => actions.openSession(bot.id) },
-    (0, import_react7.createElement)(BotMark, { bot, size: 22 })
+    (0, import_react7.createElement)(BotMark, { bot, size: 24 })
   );
   return (0, import_react7.createElement)(
     "div",
     { className: "bt-group-msg" },
+    lead,
     (0, import_react7.createElement)(
       "span",
-      { className: "bt-group-name", style: { color: inkText(colorOf(bot)) } },
+      { className: "bt-group-name" },
       bot.name,
       room2?.admin === bot.id ? (0, import_react7.createElement)("span", { className: "bt-group-role" }, t("Admin")) : null
     ),
-    (0, import_react7.createElement)(Bubbles, { texts: texts2, roster, selfId: bot.id, actions, sessionId: room2?.id, msgKey, useUi, lead, whole })
+    (0, import_react7.createElement)(Bubbles, { texts: texts2, roster, selfId: bot.id, actions, sessionId: room2?.id, msgKey, useUi, whole })
   );
 }
 function stackReplies(replies) {
@@ -4714,7 +4722,6 @@ function GroupReplies({ sessionId, callId, done, content, roster, actions, useUi
           (0, import_react7.createElement)(
             "button",
             { type: "button", className: "bt-event-whole", onClick: () => actions.showDetails(sessionId) },
-            (0, import_react7.createElement)(BotMark, { bot, size: 16 }),
             (0, import_react7.createElement)("span", { className: "bt-event-name" }, t(reply.kind === "working" ? "{name} started on it" : "{name} paused for your approval", { name: bot.name }))
           )
         );
@@ -4733,7 +4740,7 @@ function GroupReplies({ sessionId, callId, done, content, roster, actions, useUi
       return (0, import_react7.createElement)(
         "div",
         { key: `pending-${id}`, className: "bt-activity" },
-        (0, import_react7.createElement)(BotMark, { bot, size: 22, state: speakerTool ? toolState(speakerTool) : "thinking" }),
+        (0, import_react7.createElement)(BotMark, { bot, size: 24, state: speakerTool ? toolState(speakerTool) : "thinking" }),
         (0, import_react7.createElement)(Shimmer, null, speakerDoing ? `${bot.name} · ${speakerDoing}…` : t("{name} is typing…", { name: bot.name }))
       );
     })
@@ -13666,6 +13673,9 @@ var NATIVE_CONVERSATION_CSS = `
 .bt-msg-line>.bt-tools{left:auto;right:0;bottom:-22px;top:auto;transform:none}
 .bt-msg-line>.bt-bubble{flex:1;padding:4px 0;border:0;border-radius:0;background:none;line-height:1.7}
 .bt-msg-tools{align-self:flex-end}
+.bt-group-msg .bt-msg-line>.bt-bubble{padding:0;line-height:calc(var(--dsh-content-font-size,14px) + 8px)}
+.bt-group-msg .bt-msg{padding-bottom:0}
+.bt-group-msg .bt-msg:last-child{padding-bottom:24px}
 .bt-bubble [class*="_markdown"]>*+*{margin-top:14px}
 .bt-ubody{border-radius:var(--dsw-radius-md,12px);padding:10px 16px;line-height:1.6}
 .bt-plus{border-radius:var(--dsw-radius-sm,8px);background:none;box-shadow:none}

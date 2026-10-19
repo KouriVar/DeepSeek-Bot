@@ -1,10 +1,9 @@
 import { createElement as h, Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { MarkdownText } from './dsh-primitives.js'
-import { inkText } from './inks.js'
 import { linkMentions, mentionTarget, dayLabel, contentText, stripHeader, isHiddenTurn, isRelayContext, relaysBefore, relayPart, commRunOf, toolName, toolArgs, reminderPrompts } from './text.js'
 import { SmileIcon, ReplyIcon, DotsIcon, CheckIcon, DownloadIcon, CopyIcon, MemoryIcon } from './icons.js'
-import { colorOf, toolState, BotMark, RoomAvatar } from './mark.js'
+import { toolState, BotMark, RoomAvatar } from './mark.js'
 import { AnsweredCell, SettledQuestion, PendingQuestion } from './questions.js'
 import { SecretToolCell } from './secret-card.js'
 import { dateLocale, t } from './i18n.js'
@@ -205,11 +204,11 @@ function EventLine({ prefix, bots, joiner = t('and'), onOpen, whole = false }) {
 // One Bot message inside a group chat: avatar, name (with its group role), bubble.
 function GroupMessage({ bot, text, texts = [text], room, roster, actions, msgKey, useUi, whole }) {
   const lead = h('button', { type: 'button', className: 'bt-lead', 'aria-label': t("Open {name}'s chat", { name: bot.name }), onClick: () => actions.openSession(bot.id) },
-    h(BotMark, { bot, size: 22 }))
-  return h('div', { className: 'bt-group-msg' },
-    h('span', { className: 'bt-group-name', style: { color: inkText(colorOf(bot)) } }, bot.name,
+    h(BotMark, { bot, size: 24 }))
+  return h('div', { className: 'bt-group-msg' }, lead,
+    h('span', { className: 'bt-group-name' }, bot.name,
       room?.admin === bot.id ? h('span', { className: 'bt-group-role' }, t('Admin')) : null),
-    h(Bubbles, { texts, roster, selfId: bot.id, actions, sessionId: room?.id, msgKey, useUi, lead, whole }))
+    h(Bubbles, { texts, roster, selfId: bot.id, actions, sessionId: room?.id, msgKey, useUi, whole }))
 }
 
 // A member's messages in a row, as one block under its name: what it says while it
@@ -683,7 +682,7 @@ function GroupReplies({ sessionId, callId, done, content, roster, actions, useUi
       if (reply.kind === 'approval' || reply.kind === 'working') {
         return h('div', { key: `${reply.botId}-${index}`, className: 'bt-event' },
           h('button', { type: 'button', className: 'bt-event-whole', onClick: () => actions.showDetails(sessionId) },
-            h(BotMark, { bot, size: 16 }), h('span', { className: 'bt-event-name' }, t(reply.kind === 'working' ? '{name} started on it' : '{name} paused for your approval', { name: bot.name }))))
+            h('span', { className: 'bt-event-name' }, t(reply.kind === 'working' ? '{name} started on it' : '{name} paused for your approval', { name: bot.name }))))
       }
       if (reply.kind === 'stopped') {
         return h('div', { key: `${reply.botId}-${index}`, className: 'bt-event' }, t("You stopped {name}'s work", { name: bot.name }))
@@ -697,7 +696,7 @@ function GroupReplies({ sessionId, callId, done, content, roster, actions, useUi
       const bot = roster.byId[id]
       if (!bot) return null
       return h('div', { key: `pending-${id}`, className: 'bt-activity' },
-        h(BotMark, { bot: bot, size: 22, state: speakerTool ? toolState(speakerTool) : 'thinking' }),
+        h(BotMark, { bot: bot, size: 24, state: speakerTool ? toolState(speakerTool) : 'thinking' }),
         h(Shimmer, null, speakerDoing ? `${bot.name} · ${speakerDoing}…` : t('{name} is typing…', { name: bot.name })))
     }))
 }
