@@ -118,6 +118,7 @@ var ZH = {
   "Open {name}'s chat": "打开 {name} 的对话",
   "New Bot": "新 Bot",
   // Sidebar and account menu
+  "Design department": "设计部",
   "Bot list": "Bot 列表",
   "Setting up your Main Bot…": "正在设置你的主 Bot…",
   "Connect plugins": "连接插件",
@@ -5536,6 +5537,7 @@ function showsDshRow(dsh, app) {
 // src/client/sidebar.js
 var import_react9 = require("react");
 var import_react_dom3 = require("react-dom");
+var import_dsh_client_ui_primitives2 = require("@deepseek-ai/dsh-client-ui-primitives");
 function useMarkedUnread(id, active, marked, actions) {
   (0, import_react9.useEffect)(() => {
     if (active && marked) actions.clearUnread(id);
@@ -5835,15 +5837,13 @@ function TeamSidebar(props) {
   };
   return (0, import_react9.createElement)(
     "div",
-    { className: wide ? "bt-side" : "bt-side bt-rail", onKeyDown: typeToSearch },
+    { className: `${wide ? "bt-side" : "bt-side bt-rail"}${props.nativeHeader ? " bt-native-side" : ""}`, onKeyDown: typeToSearch },
     props.nativeHeader ? wide ? (0, import_react9.createElement)(
       "div",
       { className: "bt-side-list-head" },
-      (0, import_react9.createElement)("span", { className: "bt-side-list-title" }, t("Bots")),
-      (0, import_react9.createElement)(UpdateButton, { useUpdate: props.useUpdate, actions }),
-      (0, import_react9.createElement)("button", { type: "button", className: "bt-round", "aria-label": t("Search"), title: t("Search"), onClick: () => actions.openPalette() }, (0, import_react9.createElement)(SearchIcon)),
-      (0, import_react9.createElement)("button", { type: "button", className: "bt-round", "aria-label": t("New…"), title: t("New…"), onClick: () => actions.openNewChat("new") }, (0, import_react9.createElement)(PlusIcon))
-    ) : null : wide ? (0, import_react9.createElement)(
+      (0, import_react9.createElement)("span", { className: "bt-side-list-title" }, t("Design department")),
+      (0, import_react9.createElement)("button", { type: "button", className: "bt-round bt-native-search", "aria-label": t("Search"), title: t("Search"), onClick: () => actions.openPalette() }, (0, import_react9.createElement)(import_dsh_client_ui_primitives2.IconSearchOutlineRegular, { size: 14 }))
+    ) : (0, import_react9.createElement)("button", { type: "button", className: "bt-round bt-native-search", "aria-label": t("Search"), title: t("Search"), onClick: () => actions.openPalette() }, (0, import_react9.createElement)(import_dsh_client_ui_primitives2.IconSearchOutlineRegular, { size: 18 })) : wide ? (0, import_react9.createElement)(
       "div",
       { className: "bt-side-top" },
       (0, import_react9.createElement)(
@@ -6417,7 +6417,7 @@ function writeMode(mode, storage = globalThis.localStorage) {
 
 // src/client/native-conversation.js
 var import_react10 = require("react");
-var import_dsh_client_ui_primitives2 = require("@deepseek-ai/dsh-client-ui-primitives");
+var import_dsh_client_ui_primitives3 = require("@deepseek-ai/dsh-client-ui-primitives");
 var BOT_TOOL_NAMES = ["message_bot", "stop_bot", "create_bot", "update_bot", "group_relay", "create_group", "update_group", "delete_group", "post_to_group", "ask_user", "request_secret", "ask_user_question", "read_group_chat", "remember", "forget"];
 function BotToolView(props) {
   return (0, import_react10.createElement)(ToolCell, { ...props, node: { data: { root: props.block } } });
@@ -6441,7 +6441,7 @@ function NativeBotDetails({ sessionId, actions, useUi, useRoster }) {
     title: t("View conversation details"),
     "aria-expanded": open,
     onClick: () => actions.toggleDetails(sessionId)
-  }, (0, import_react10.createElement)(import_dsh_client_ui_primitives2.IconAgentPresetOutlineRegular, { size: 16 })));
+  }, (0, import_react10.createElement)(import_dsh_client_ui_primitives3.IconAgentPresetOutlineRegular, { size: 16 })));
 }
 function NativeTurnProcess({ NativeNode, useRoster, sessionId, turnProcess, ...props }) {
   const group = useRoster((roster) => Boolean(roster.roomsById[sessionId]));
@@ -14415,12 +14415,12 @@ function noticeApprovals({ work, roster, shownSession, openSession, since = Date
 
 // src/client/bot-entry.js
 var import_react38 = require("react");
-var import_dsh_client_ui_primitives3 = require("@deepseek-ai/dsh-client-ui-primitives");
+var import_dsh_client_ui_primitives4 = require("@deepseek-ai/dsh-client-ui-primitives");
 function BotPanelIcon({ size }) {
-  return (0, import_react38.createElement)(import_dsh_client_ui_primitives3.IconAgentPresetOutlineRegular, { size });
+  return (0, import_react38.createElement)(import_dsh_client_ui_primitives4.IconAgentPresetOutlineRegular, { size });
 }
 function ChatPanelIcon({ size }) {
-  return (0, import_react38.createElement)(import_dsh_client_ui_primitives3.IconNewChatOutlineRegular, { size });
+  return (0, import_react38.createElement)(import_dsh_client_ui_primitives4.IconNewChatOutlineRegular, { size });
 }
 function BotEntry({ actions, useSurface }) {
   const mode = useSurface((state) => state.mode);
@@ -14475,6 +14475,21 @@ function installNativeAccount(ctx, actions, face) {
   });
 }
 
+// src/client/native-sidebar.js
+function installNativeNewSession(actions, root = document) {
+  const open = (event) => {
+    if (event.defaultPrevented) return;
+    const button = event.target?.closest?.('button[class*="_newSession"]');
+    if (!button || button.disabled) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    actions.selectPanel(null);
+    actions.openNewChat("new");
+  };
+  root.addEventListener("click", open, true);
+  return () => root.removeEventListener("click", open, true);
+}
+
 // src/client/native-theme.js
 var NATIVE_TOKENS = `
 html body,html body[data-ds-dark-theme]{
@@ -14498,6 +14513,16 @@ var NATIVE_SHELL_CSS = `
 .bt-new-chat:hover{background:var(--bt-hover)}
 .bt-side-list-head{display:flex;align-items:center;justify-content:space-between;padding:0 6px;color:var(--bt-ink-3);font-size:12px;line-height:20px}
 .bt-side-list-title{margin-right:auto}
+.bt-native-side{padding:0 var(--dsh-sidebar-inline-padding,12px) 8px 0;gap:0}
+.bt-native-side .bt-side-list-head{box-sizing:border-box;flex:none;justify-content:flex-end;gap:4px;height:36px;margin:2px -4px 4px 0;padding:0 0 0 4px;border-radius:var(--dsw-radius-md);font:inherit;color:var(--dsw-alias-label-tertiary);overflow:hidden}
+.bt-native-side .bt-side-list-title{min-width:0;max-width:calc(100% - 32px);font-size:14px;font-weight:400;line-height:20px;white-space:nowrap;overflow:hidden}
+.bt-native-search{flex:none;color:var(--dsw-alias-label-secondary)}
+.bt-native-search svg{width:14px;height:14px}
+.bt-native-search:active{transform:none}
+.bt-native-search:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:-2px}
+.bt-native-side.bt-rail{padding:0 0 8px}
+.bt-native-side.bt-rail>.bt-native-search{width:36px;height:36px;margin-bottom:12px;border-radius:var(--dsw-radius-md);color:var(--dsw-alias-label-primary)}
+.bt-native-side.bt-rail>.bt-native-search svg{width:18px;height:18px}
 .bt-list{gap:4px}
 .bt-row{min-height:36px;padding:7px 8px;gap:8px;border-radius:var(--dsw-radius-md,12px)}
 .bt-row-name{line-height:22px}
@@ -15147,6 +15172,7 @@ function apply(ctx) {
     browsers ? () => installCompiledStyles(BROWSER_CSS, "browser") : null,
     () => installTheme(),
     () => shadow("sidebar.workspaces", { priority: BOT_PRIORITY, inject: () => ({ ...face(), nativeHeader: true }) }, TeamSidebar),
+    () => installNativeNewSession(actions),
     () => installNativeAccount(ctx, actions, face),
     () => shadow("shell.overlay", { id: "bot", order: 50, inject: face }, Overlays),
     () => shadow("shell.overlay", { id: "bot-signin", order: 55, inject: face }, DeepSeekSignIn),

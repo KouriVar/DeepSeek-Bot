@@ -113,6 +113,10 @@ test('an open sidebar has a button that collapses it; the rail leaves that to th
   const native = TeamSidebar({ ...props(true), nativeHeader: true })
   assert.equal(find(native, collapse), undefined)
   assert.equal(find(native, node => ['bt-brand', 'bt-new-chat'].includes(node.props?.className)), undefined)
+  assert.equal(find(native, node => node.props?.['aria-label'] === 'New…'), undefined)
+  const search = find(native, node => node.props?.['aria-label'] === 'Search')
+  assert.ok(search)
+  assert.equal(search.props.children[0].props.size, 14)
 })
 
 test('the Bot surface leaves the Windows logo row geometry to Harness', () => {

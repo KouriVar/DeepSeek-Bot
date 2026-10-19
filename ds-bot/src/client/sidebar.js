@@ -1,6 +1,7 @@
 import { createElement as h, Fragment, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { FishLogo } from './dsh-primitives.js'
+import { IconSearchOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { isMainOf } from './sources.js'
 import { currentPart, previewOf, relativeShort } from './text.js'
 import { PlusIcon, SearchIcon, SidebarIcon, GaugeIcon, PlugIcon, ClockIcon, GearIcon, PinMarkIcon, ConnectorIcon, SwitchIcon, CloudDownloadIcon } from './icons.js'
@@ -265,12 +266,11 @@ export function TeamSidebar(props) {
     event.preventDefault()
     actions.openPalette(event.key)
   }
-  return h('div', { className: wide ? 'bt-side' : 'bt-side bt-rail', onKeyDown: typeToSearch },
+  return h('div', { className: `${wide ? 'bt-side' : 'bt-side bt-rail'}${props.nativeHeader ? ' bt-native-side' : ''}`, onKeyDown: typeToSearch },
     props.nativeHeader ? (wide ? h('div', { className: 'bt-side-list-head' },
-      h('span', { className: 'bt-side-list-title' }, t('Bots')),
-      h(UpdateButton, { useUpdate: props.useUpdate, actions }),
-      h('button', { type: 'button', className: 'bt-round', 'aria-label': t('Search'), title: t('Search'), onClick: () => actions.openPalette() }, h(SearchIcon)),
-      h('button', { type: 'button', className: 'bt-round', 'aria-label': t('New…'), title: t('New…'), onClick: () => actions.openNewChat('new') }, h(PlusIcon))) : null)
+      h('span', { className: 'bt-side-list-title' }, t('Design department')),
+      h('button', { type: 'button', className: 'bt-round bt-native-search', 'aria-label': t('Search'), title: t('Search'), onClick: () => actions.openPalette() }, h(IconSearchOutlineRegular, { size: 14 })))
+      : h('button', { type: 'button', className: 'bt-round bt-native-search', 'aria-label': t('Search'), title: t('Search'), onClick: () => actions.openPalette() }, h(IconSearchOutlineRegular, { size: 18 })))
       : wide ? h('div', { className: 'bt-side-top' },
       h('div', { className: 'bt-side-brand-row' },
         h('span', { className: 'bt-brand' }, h(BrandMark, { size: 22 }), h(BrandName)),

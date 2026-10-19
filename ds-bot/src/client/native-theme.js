@@ -23,6 +23,16 @@ export const NATIVE_SHELL_CSS = `
 .bt-new-chat:hover{background:var(--bt-hover)}
 .bt-side-list-head{display:flex;align-items:center;justify-content:space-between;padding:0 6px;color:var(--bt-ink-3);font-size:12px;line-height:20px}
 .bt-side-list-title{margin-right:auto}
+.bt-native-side{padding:0 var(--dsh-sidebar-inline-padding,12px) 8px 0;gap:0}
+.bt-native-side .bt-side-list-head{box-sizing:border-box;flex:none;justify-content:flex-end;gap:4px;height:36px;margin:2px -4px 4px 0;padding:0 0 0 4px;border-radius:var(--dsw-radius-md);font:inherit;color:var(--dsw-alias-label-tertiary);overflow:hidden}
+.bt-native-side .bt-side-list-title{min-width:0;max-width:calc(100% - 32px);font-size:14px;font-weight:400;line-height:20px;white-space:nowrap;overflow:hidden}
+.bt-native-search{flex:none;color:var(--dsw-alias-label-secondary)}
+.bt-native-search svg{width:14px;height:14px}
+.bt-native-search:active{transform:none}
+.bt-native-search:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:-2px}
+.bt-native-side.bt-rail{padding:0 0 8px}
+.bt-native-side.bt-rail>.bt-native-search{width:36px;height:36px;margin-bottom:12px;border-radius:var(--dsw-radius-md);color:var(--dsw-alias-label-primary)}
+.bt-native-side.bt-rail>.bt-native-search svg{width:18px;height:18px}
 .bt-list{gap:4px}
 .bt-row{min-height:36px;padding:7px 8px;gap:8px;border-radius:var(--dsw-radius-md,12px)}
 .bt-row-name{line-height:22px}

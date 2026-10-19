@@ -206,3 +206,24 @@ The real macOS App confirms the revised group layout, deduplicated sidebar role
 labels, and the companion editor with shape, color and work-state controls.
 Existing team identities and conversations were preserved; no production Bot was
 created or messaged during validation.
+
+## Department header and Bot new-session destination
+
+Version `0.1.7-halfsignal.12` names the Bot browsing section “Design department”
+(设计部). Its header uses the native workspace geometry and official search icon:
+36px row, 14px label and glyph, 28px control, native theme colors and insets.
+The redundant plus is removed. Search retains the Bot/chat/message palette.
+
+In Bot mode a capture listener scoped to the shell surface routes activation of
+the existing native New Session button to the Bot recipient picker, including
+Bot/group creation. The sidebar itself remains registered by Harness: its child
+slots have exclusive owners and cannot be redeclared by a wrapper. Leaving Bot
+mode removes the listener and restores the original Chat new-session action. The native logo, panels and footer stay owned
+by Harness.
+
+Validation: 741 plugin tests passed (2 skipped); lint and generated-client checks
+passed. Same-viewport browser measurements confirm identical 36px header height,
+14px label/icon, 28px search target, label x/y position and native colors.
+Verified Bot picker opening, Chat blank-session behavior, search results and the
+collapsed sidebar. Installed `.12` through the official desktop CLI and verified
+the new heading and top-button destination in the real macOS App.

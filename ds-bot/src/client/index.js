@@ -38,6 +38,7 @@ import { USER_MESSAGE_CSS } from './user-message.js'
 import { noticeApprovals } from './approval-notices.js'
 import { BotEntry, BotPanelIcon, ChatPanelIcon } from './bot-entry.js'
 import { installNativeAccount } from './native-account.js'
+import { installNativeNewSession } from './native-sidebar.js'
 import { NATIVE_TOKENS, NATIVE_SHELL_CSS, NATIVE_CONVERSATION_CSS } from './native-theme.js'
 
 export const inject = ['sessions', 'uiWorkspace', 'uiConversation', 'slots', 'theme', 'layout']
@@ -629,6 +630,7 @@ export function apply(ctx) {
     browsers ? () => installCompiledStyles(BROWSER_CSS, 'browser') : null,
     () => installTheme(),
     () => shadow('sidebar.workspaces', { priority: BOT_PRIORITY, inject: () => ({ ...face(), nativeHeader: true }) }, TeamSidebar),
+    () => installNativeNewSession(actions),
     () => installNativeAccount(ctx, actions, face),
     () => shadow('shell.overlay', { id: 'bot', order: 50, inject: face }, Overlays),
     () => shadow('shell.overlay', { id: 'bot-signin', order: 55, inject: face }, DeepSeekSignIn),

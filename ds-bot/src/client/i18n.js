@@ -67,6 +67,7 @@ const ZH = {
   'New Bot': '新 Bot',
 
   // Sidebar and account menu
+  'Design department': '设计部',
   'Bot list': 'Bot 列表',
   'Setting up your Main Bot…': '正在设置你的主 Bot…',
   'Connect plugins': '连接插件',
