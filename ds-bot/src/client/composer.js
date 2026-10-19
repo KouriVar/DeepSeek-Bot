@@ -53,7 +53,7 @@ export function useDictation(onText) {
   return { listening, note, start, stop }
 }
 
-export function ComposerVoice({ sessionId, inputActions, actions, useUi }) {
+export function ComposerVoice({ sessionId, inputActions, actions, useUi, native = false }) {
   const dictation = useDictation((text, final) => {
     if (final && inputActions) inputActions.insertText(text, inputActions.captureInsertion())
   })
@@ -73,7 +73,7 @@ export function ComposerVoice({ sessionId, inputActions, actions, useUi }) {
       selection?.collapseToEnd()
     }
   }, [quote?.token])
-  if (sessionId === undefined) return null
+  if (sessionId === undefined || native) return null
   // With the Voice Input plugin on, its own microphone sits in this composer.
   const pluginMic = actions.speech() !== undefined
   return h(Fragment, null,

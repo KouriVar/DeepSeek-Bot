@@ -149,11 +149,11 @@ const resolve = (value, vars) => {
   return resolve(match[2], vars)
 }
 
-test('a user message stays readable when a dark skin repaints the host bubble', () => {
+test('a plugin bubble stays readable when a dark skin repaints the host bubble', () => {
   for (const id of ['deepseek', 'mono', 'paper', 'moonlight']) {
     const vars = { ...themeVars(allThemes()[id], true), ...DARK_SKIN }
     const page = vars['--bt-main']
-    for (const selector of ['.bt-ubody', '[class*="_userRow"] [class*="_bubble"]']) {
+    for (const selector of ['.bt-ubody']) {
       const { body } = ruleFor(selector)
       const paper = over(resolve(surface(body), vars), page)
       const ink = over(resolve(declared(body, 'color'), vars), paper)
@@ -162,8 +162,7 @@ test('a user message stays readable when a dark skin repaints the host bubble', 
   }
 })
 
-test('the surface wins over the host bubble rule that reads the skin variable', () => {
-  const { body } = ruleFor('[class*="_userRow"] [class*="_bubble"]')
-  assert.equal(surface(body), 'var(--bt-user)!important')
-  assert.equal(declared(body, 'color'), 'var(--bt-user-ink)!important')
+test('native user bubbles keep the host theme and message toolbar', () => {
+  assert.doesNotMatch(bundle, /\[class\*="_userRow"\] \[class\*="_bubble"\]\{/)
+  assert.doesNotMatch(bundle, /\[class\*="_userRow"\] \[class\*="_actions"\]\{display:none/)
 })

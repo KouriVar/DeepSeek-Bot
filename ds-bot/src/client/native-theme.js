@@ -57,6 +57,10 @@ button:hover .bt-you,.bt-account[aria-expanded=true] .bt-you{background:none}
 `
 
 export const NATIVE_CONVERSATION_CSS = `
+.bt-native-context{display:inline-flex;align-items:center}
+.bt-native-details{display:inline-flex;align-items:center;justify-content:center;flex:none;width:24px;height:24px;padding:0;border:0;border-radius:var(--dsw-radius-sm,8px);background:none;color:var(--dsw-alias-label-tertiary);cursor:pointer}
+.bt-native-details:hover,.bt-native-details[aria-expanded=true]{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
+.bt-native-details:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}
 .bt-head{justify-content:flex-start;height:36px}
 .bt-pill{height:32px;padding:4px 8px;gap:8px;border:0;border-radius:var(--dsw-radius-sm,8px);box-shadow:none;background:none;max-width:calc(100% - 48px)}
 .bt-pill:hover{background:var(--bt-hover)}
@@ -74,6 +78,5 @@ export const NATIVE_CONVERSATION_CSS = `
 .bt-bubble [class*="_markdown"]>*+*{margin-top:14px}
 .bt-ubody{border-radius:var(--dsw-radius-md,12px);padding:10px 16px;line-height:1.6}
 .bt-plus{border-radius:var(--dsw-radius-sm,8px);background:none;box-shadow:none}
-[data-composer-placeholder]{inset:4px 8px auto 14px!important}
 .bt-icon-btn{border-radius:var(--dsw-radius-sm,8px)}
 `

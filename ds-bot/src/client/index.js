@@ -8,13 +8,13 @@ import { MENTION_ORIGIN, currentPart } from './text.js'
 import { SHELL_CSS, CONVERSATION_CSS, installStyles, installCompiledStyles } from './styles.js'
 import { lookOf } from './mark.js'
 import { TeamSidebar, SIDEBAR_CSS, holdShellShortcuts, openHarnessOnboarding, openHarnessSettings } from './sidebar.js'
-import { HeaderPill } from './header.js'
-import { ComposerPlus, ComposerVoice, menuIcons } from './composer.js'
+import { NativeBotDetails, BotToolView, BOT_TOOL_NAMES, installTurnProcess } from './native-conversation.js'
+import { ComposerVoice, menuIcons } from './composer.js'
 import { CHATS_SOURCE, atSources } from './at-menu.js'
 import { VOICE_BUNDLE } from './speech.js'
 import { sameVersion } from './dsh-offer.js'
 import { AnsweredCell, QuestionCard, QuestionDock } from './questions.js'
-import { AssistantCell, TriggerCell, TurnProcessCell, Nothing, TurnTailCell, ToolCell } from './cells.js'
+import { TriggerCell, Nothing } from './cells.js'
 import { Overlays } from './overlays.js'
 import { createBotBrowsers, serveBrowserReads } from './bot-browsers.js'
 import { BROWSER_CSS } from './browser-pane.js'
@@ -33,7 +33,7 @@ import { noteClientError, quietly } from './diagnostics.js'
 import { ErrorToast, FEEDBACK_CSS } from './feedback.js'
 import { ABOUT_CSS } from './about.js'
 import { MEMBER_CSS, MemberDock } from './member-status.js'
-import { USER_MESSAGE_CSS, UserMessageCell, canDrawUserMessages } from './user-message.js'
+import { USER_MESSAGE_CSS } from './user-message.js'
 import { noticeApprovals } from './approval-notices.js'
 import { BotEntry, BotPanelIcon, ChatPanelIcon } from './bot-entry.js'
 import { installNativeAccount } from './native-account.js'
@@ -573,23 +573,6 @@ export function apply(ctx) {
     shownSession: () => Object.values(ctx.sessions.list.getSnapshot().byId ?? {}).find(session => (session?.retainedBy?.mainView ?? 0) > 0)?.id,
     openSession: id => actions.openSession(id),
   }), 'ds-bot: approval notifications')
-  const assistantFace = (sessionId) => {
-    const binding = ctx.sessions.binding(sessionId)
-    if (binding === undefined) throw new Error(`ds-bot: unknown session "${sessionId}"`)
-    const chat = ctx.uiConversation.binding(binding).target('chat')
-    return { ...face(), keyedHooks: {
-      turnSteps: (turn) => {
-        const snapshot = chat.getSnapshot()
-        if (snapshot === undefined) throw new Error('ds-bot: Chat target is unavailable')
-        return snapshot.nodes.turnDataSource(Number(turn), 'assistant-step')
-      },
-      turnContext: (turn) => {
-        const snapshot = chat.getSnapshot()
-        if (snapshot === undefined) throw new Error('ds-bot: Chat target is unavailable')
-        return snapshot.nodes.turnDataSource(Number(turn), 'context')
-      },
-    } }
-  }
 
   // A Bot surface owns the cells it shadows. It starts far below the -10 that plugins
   // commonly use and goes below whatever already holds the cell, so a plugin that
@@ -654,28 +637,15 @@ export function apply(ctx) {
     () => installCompiledStyles(CONVERSATION_CSS + NATIVE_CONVERSATION_CSS, 'conversation'),
     () => installMentions(),
     () => installAtMenu(),
-    () => shadow('conversation.session.header', { priority: BOT_PRIORITY, inject: face }, HeaderPill),
-    () => shadow('conversation.chat.node', { key: 'assistant-step', priority: BOT_PRIORITY, locale: 'chat', inject: assistantFace }, AssistantCell),
+    () => shadow('conversation.session.header.actions', { id: 'bot-details', order: 100, inject: face }, NativeBotDetails),
     () => shadow('conversation.chat.node', { key: 'turn-trigger', priority: BOT_PRIORITY, locale: 'chat', inject: face }, TriggerCell),
-    () => shadow('conversation.chat.node', { key: 'tool-call', priority: BOT_PRIORITY, locale: 'chat', inject: face }, ToolCell),
-    () => shadow('conversation.chat.node', { key: 'turn-process', priority: BOT_PRIORITY, locale: 'chat', inject: face }, TurnProcessCell),
-    // DSH's own turn tail stays, so what other plugins add there shows, such as the
-    // cards of the files a turn delivered; its copy and branch row is hidden.
-    () => shadow('conversation.chat.turnTail', { id: 'bot-turn-separators', order: 1000, inject: face }, TurnTailCell),
+    () => installTurnProcess(ctx, face),
+    ...BOT_TOOL_NAMES.map(key => () => shadow('tool.call.toolview', { key, priority: BOT_PRIORITY, inject: face }, BotToolView)),
     // A Bot condenses its conversation without telling anyone; the chat keeps showing
     // every message.
     () => shadow('conversation.chat.node', { key: 'question-reply', priority: BOT_PRIORITY, locale: 'chat' }, AnsweredCell),
     () => shadow('conversation.chat.node', { key: 'compaction', priority: BOT_PRIORITY, locale: 'chat' }, Nothing),
-    ...(canDrawUserMessages() ? ['user', 'steering'].map(key => () => shadow('conversation.chat.node', { key, priority: BOT_PRIORITY, locale: 'chat', inject: face }, UserMessageCell)) : []),
-    () => shadow('conversation.input.permission', { priority: BOT_PRIORITY }, Nothing),
-    () => shadow('conversation.input.plan', { priority: BOT_PRIORITY }, Nothing),
-    // The composer carries no model picker or run statistics; a Bot's model lives
-    // in its details panel.
-    () => shadow('conversation.input.model', { priority: BOT_PRIORITY }, Nothing),
-    () => shadow('conversation.composer.dock', { id: 'activity', order: 0, priority: BOT_PRIORITY }, Nothing),
-    () => shadow('conversation.composer.dock', { id: 'usage', order: 1, priority: BOT_PRIORITY }, Nothing),
-    () => shadow('conversation.input.left', { id: 'bot-plus', order: -100, inject: face }, ComposerPlus),
-    () => shadow('conversation.input.right', { id: 'bot-voice', order: 100, inject: face }, ComposerVoice),
+    () => shadow('conversation.input.left', { id: 'bot-quote', order: -100, inject: () => ({ ...face(), native: true }) }, ComposerVoice),
     () => shadow('conversation.composer', {
       priority: BOT_PRIORITY,
       select: owner => (owner.pendingInteraction?.kind === 'question' ? owner.pendingInteraction : null),

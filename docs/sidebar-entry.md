@@ -62,3 +62,25 @@ Bot list respectively.
 - In the signed-in Desktop app, verified both switching labels, the same avatar
   and account name in both modes, native Plugins and Scheduled tasks in Bot mode,
   and the distinct App settings / Halfsignal settings destinations.
+
+## Native conversation surface
+
+Version `0.1.7-halfsignal.4` also retains the official conversation header, Chat /
+Trajectory tabs, assistant and user message renderers, tool tree, turn actions,
+composer controls and usage dock. It removes the Bot overrides that hid or
+restyled those areas. A small native-icon header action still opens Bot / group
+details; voice chat remains available in a Bot's details toolbar.
+
+Bot-specific tools register through the public `tool.call.toolview` extension
+point. Group replies keep their speaker names, mentions, progress and approval
+cards. The native turn-process renderer is delegated without redeclaring its
+child slots; group rounds stay open because their actual messages live in tool
+results. Recorded private coordination turns are filtered by their turn numbers,
+while their attribution remains visible. The server's routing, message delivery,
+permissions and group scheduling code are unchanged.
+
+Validation: 654 unit tests passed, generated client check and lint passed. In an
+isolated mock-backed Web profile, sent a group message with `@所有人`, verified
+both members' replies and reopened the group details panel. Installed the package
+into the existing Desktop profile with the official CLI and checked the restored
+native controls in Bot mode.

@@ -2828,21 +2828,11 @@ var CONVERSATION_CSS = `
 [class*="_scroll"]>[class*="_column"]::before{content:var(--bt-first-sep,none);display:block;flex:none;height:28px;margin:17px 0 12px;font-size:12px;line-height:28px;text-align:center;color:var(--bt-ink-2);white-space:nowrap}
 .bt-activity{display:flex;align-items:center;gap:10px;margin:8px 0 4px 2px;font-size:14px;color:var(--bt-ink-2)}
 .bt-group-replies{display:contents}
-/* A Bot chat is flat in every work-details mode, without changing the user's mode
-   (it is a DSH-wide setting): step groups lose their header and stay open, and what a
-   mode folds away in a finished turn stays shown. TurnProcessCell also opens that
-   fold; these rules cover the first frame before it does. */
-[data-step-process]>div:first-child{display:none!important}
-[data-step-process]>[data-step-process-body]{display:block!important;content-visibility:visible!important;max-height:none!important;overflow:visible!important;mask-image:none!important;scrollbar-gutter:auto!important}
-:is([data-step-process],[data-turn-process-hidden])[hidden]{content-visibility:visible!important}
+/* Empty coordination nodes take no transcript space. */
 [class*="_flowItem"]:has(> [data-slot="conversation.chat.node"]:empty){display:none!important}
-[class*="_header"]:has(.bt-head){border-bottom-color:transparent!important;box-shadow:none!important}
-/* Keep the shell's normal header and responsive content column. */
-header[class*="_header"] .bt-head{flex:1 1 auto;min-width:0}
-/* DSH's turn tail keeps what plugins put in it (delivered files, the Bot's separators),
-   without its copy and branch row; a tail with nothing in it takes no room. */
-[data-turn-tail]>:not([data-slot="conversation.chat.turnTail"]){display:none!important}
-[class*="_flowItem"][data-chat-flow-kind="turn-tail"]:not(:has([data-slot="conversation.chat.turnTail"]:not(:empty))){display:none!important}
+/* Group replies remain visible when the native work-details mode folds tools. */
+[data-turn-process-hidden]:has(.bt-group-replies){display:block!important;content-visibility:visible!important}
+[data-step-process]:has(.bt-group-replies)>[data-step-process-body]{display:block!important;content-visibility:visible!important;max-height:none!important;overflow:visible!important;mask-image:none!important}
 /* Every team Session belongs to a Bot or a group, so a blank one is an empty chat, not
    the shell's new-session hero: no headline, no workspace or mode picker, and the
    composer stays docked at the bottom. */
@@ -2886,30 +2876,13 @@ header[class*="_header"] .bt-head{flex:1 1 auto;min-width:0}
 }
 @keyframes bt-fade-in{from{opacity:0}to{opacity:1}}
 @keyframes bt-fade-out{from{opacity:1}to{opacity:0}}
-[data-composer-placeholder]{font-size:0!important;line-height:0!important}
-/* The name sits on ::before so that ::after stays free for other composer skins. */
-[data-composer-placeholder]::before{content:var(--bt-placeholder,"Message")!important;display:block!important;font-size:14px!important;line-height:24px!important;color:color-mix(in srgb,var(--bt-ink) 36%,transparent)!important}
-/* The team's "+" (ComposerPlus) takes the seat of the shell's command-menu button. */
-[data-composer-card] button[class*="_add"]{display:none!important}
 .bt-plus{flex:none;width:28px;height:28px;padding:0;border:0;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--bt-ink) 5%,transparent);box-shadow:inset 0 0 0 .5px var(--bt-line);color:var(--bt-ink-2);cursor:pointer;transition:background-color .15s ease,color .15s ease,${spring(SPRING_TAP, "scale")}}
 .bt-plus:hover,.bt-plus[aria-expanded=true]{background:color-mix(in srgb,var(--bt-ink) 10%,transparent);color:var(--bt-ink)}
 .bt-plus:active{scale:.9}
 .bt-plus svg{width:14px;height:14px;transition:${spring(SPRING_POP, "rotate")}}
 .bt-plus[aria-expanded=true] svg{rotate:45deg}
 .bt-plus-menu{min-width:180px}
-[data-composer-card] [class*="_tools"]{gap:0!important}
-[data-composer-card] [class*="_modes"]:empty{display:none!important}
-[data-composer-card] [class*="_activity"]:not(:has([data-slot] > *)){display:none!important}
-[data-composer-card] [class*="_trailing"]{gap:8px!important}
-/* No display here: DSH hides these controls with [hidden] while the Bot works. */
-[data-composer-card] [class*="_standardControls"]{align-items:center!important;gap:8px!important}
-[data-composer-card] button[class*="_primary"]{width:28px!important;height:28px!important;background:var(--bt-accent)!important;color:var(--bt-accent-ink,#fff)!important;border-radius:50%!important;transition:opacity .15s ease,${spring(SPRING_TAP, "scale")};animation:bt-icon-swap ${SPRING_POP.duration}ms ${SPRING_POP.easing}}
-[data-composer-card] button[class*="_primary"]:hover:not(:disabled){opacity:.9}
-[data-composer-card] button[class*="_primary"]:active:not(:disabled){scale:.9}
 @keyframes bt-icon-swap{from{opacity:0;transform:scale(.5) rotate(-30deg)}}
-[data-composer-card] button[class*="_primary"] svg{width:14px;height:14px}
-[data-composer-card] button[class*="_primary"]:disabled{display:none!important}
-[data-composer-dock]{display:none!important}
 .bt-mic,.bt-voice{flex:none;width:28px;height:28px;border-radius:50%;border:0;padding:0;display:inline-grid;place-items:center;cursor:pointer;transition:background-color .15s ease,color .15s ease,${spring(SPRING_TAP, "scale")}}
 .bt-mic{background:color-mix(in srgb,var(--bt-ink) 5%,transparent);box-shadow:inset 0 0 0 .5px var(--bt-line);color:var(--bt-ink-2)}
 .bt-mic:hover{background:color-mix(in srgb,var(--bt-ink) 10%,transparent);color:var(--bt-ink)}
@@ -2918,41 +2891,15 @@ header[class*="_header"] .bt-head{flex:1 1 auto;min-width:0}
 .bt-voice{display:none;background:var(--bt-accent);color:var(--bt-accent-ink,#fff);animation:bt-icon-swap ${SPRING_POP.duration}ms ${SPRING_POP.easing}}
 .bt-voice:hover{opacity:.9}
 .bt-mic:active,.bt-voice:active{scale:.9}
-[data-composer-card]:has(button[class*="_primary"]:disabled) .bt-voice{display:inline-grid}
-body[data-bt-room] .bt-voice{display:none!important}
-body[data-bt-room] [data-composer-card]:has(button[class*="_primary"]:disabled) .bt-mic:not([aria-pressed=true]){background:var(--bt-accent);color:var(--bt-accent-ink,#fff)}
 .bt-mic-note{position:absolute;right:12px;bottom:calc(100% + 8px);padding:5px 10px;border-radius:8px;background:var(--bt-user);color:var(--bt-user-ink);font-size:12px;line-height:16px;white-space:nowrap;pointer-events:none;animation:bt-rise .16s ease-out}
 [data-chain-overlay-fallback="conversation.composer"]:has(~ .bt-q){display:block!important;order:2}
 .bt-q{order:1}
-div:has(> nav [class*="_marks"]){display:none!important}
-/* Every user-side bubble (sent, steering mid-turn, not yet admitted, question replies)
-   takes its surface and its text from the one --bt-user pair: a skin that repaints
-   the host's bubble surface alone would otherwise leave the text unreadable. */
-[class*="_userRow"] [class*="_bubble"],[data-chat-flow-kind=question-reply] [class*="_bubble"],[data-chat-flow-kind=command-input] [class*="_bubble"]{background:var(--bt-user)!important;color:var(--bt-user-ink)!important;border-radius:18px!important;padding:7px 12px!important;font-size:var(--dsh-content-font-size,14px)!important;line-height:calc(var(--dsh-content-font-size,14px) + 8px)!important}
-[class*="_userRow"] [class*="_bubble"] [class*="_markdown"],[class*="_userRow"] [class*="_bubble"] a{color:inherit}
-/* Sent messages get the hover toolbar below; steering and unsent bubbles keep none. */
-[class*="_userRow"] [class*="_actions"]{display:none!important}
-[data-chat-flow-kind=user] [class*="_userRow"]{flex-direction:row-reverse;align-items:center;justify-content:flex-start}
-[data-chat-flow-kind=user] [class*="_actions"]{display:flex!important;height:24px!important;gap:2px!important;opacity:0!important;visibility:hidden;transition:opacity .12s ease,visibility .12s!important;flex:none}
-[data-chat-flow-kind=user] [class*="_userRow"]:hover [class*="_actions"],[data-chat-flow-kind=user] [class*="_userRow"]:focus-within [class*="_actions"]{opacity:1!important;visibility:visible}
-[data-chat-flow-kind=user] [class*="_actions"] [class*="_timeStart"]{display:none}
-[data-chat-flow-kind=user] [class*="_actions"] button{width:24px;height:24px;border-radius:6px;color:var(--bt-ink-2)}
-[data-chat-flow-kind=user] [class*="_actions"] button:hover{background:var(--bt-hover);color:var(--bt-ink)}
-[data-chat-flow-kind=user] [class*="_actions"] svg{width:15px;height:15px}
 .bt-q-inline{display:flex;margin:4px 0 6px}
 [data-chat-flow-kind=assistant-step]+[data-step-process]:has(.bt-q-inline){margin-top:0!important}
 [data-chat-flow-kind=question-reply]:has(.bt-q-inline),[data-chat-group-key]:has([data-chat-flow-kind=question-reply] .bt-q-inline),[data-chat-group-key]:has(.bt-q-gone){margin-top:0!important}
 .bt-q-inline .bt-q{margin:0;max-width:min(550px,86%);order:0}
 .bt-q-dock{width:100%;display:flex;justify-content:center}
 .bt-q-dock .bt-q{margin:0 auto 8px}
-[class*="_toBottomSlot"]{justify-content:center!important;padding-right:0!important}
-[data-conversation-scroll] [class*="_toBottomSlot"]{bottom:calc(var(--dsh-composer-height,152px) + 8px)!important}
-[class*="_toBottomSlot"]>button{width:36px!important;height:36px!important;margin-top:-36px!important;background:var(--bt-main)!important;color:var(--bt-ink)!important;box-shadow:0 0 0 .5px var(--bt-line-2),0 2px 8px -2px rgba(0,0,0,.12)!important;animation:bt-tobottom-in ${SPRING_TAP.duration}ms ${SPRING_TAP.easing},bt-veil-in .16s ease-out;transition:background-color .12s ease,${spring(SPRING_TAP, "scale")}}
-[class*="_toBottomSlot"]>button:active{scale:.9}
-[class*="_toBottomSlot"]>button:hover{background:color-mix(in srgb,var(--bt-ink) 4%,var(--bt-main))!important}
-[class*="_toBottomSlot"]>button svg{display:none}
-[class*="_toBottomSlot"]>button::before{content:"";width:20px;height:20px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 4v12M5 11l5 5 5-5'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 4v12M5 11l5 5 5-5'/%3E%3C/svg%3E") center/contain no-repeat}
-@keyframes bt-tobottom-in{from{translate:0 8px;scale:.8}}
 [data-bt-news] [class*="_toBottomSlot"]>button{visibility:hidden!important;pointer-events:none!important}
 .bt-news{position:fixed;z-index:30;transform:translateX(-50%);display:inline-flex;align-items:center;overflow:hidden;border-radius:999px;background:var(--bt-accent);color:var(--bt-accent-ink);box-shadow:inset 0 0 0 1px rgba(20,20,20,.05),0 1px 3px 0 rgba(0,0,0,.12);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;animation:bt-news-in ${SPRING_TAP.duration}ms ${SPRING_TAP.easing},bt-veil-in .16s ease-out}
 @keyframes bt-news-in{from{translate:0 8px;scale:.9}}
@@ -5851,229 +5798,210 @@ var SIDEBAR_CSS = `
 @media (prefers-reduced-motion:reduce){.bt-agent-sub{transition:none}.bt-agent-sub .bt-agent-sub-row{animation:none}}
 `;
 
-// src/client/header.js
+// src/client/storage.js
+var STORAGE = {
+  unread: "ds-bot:unread",
+  reactions: "ds-bot:reactions",
+  seen: "ds-bot:seen",
+  prefs: "ds-bot:prefs",
+  surface: "ds-bot:surface",
+  agentSessions: "ds-bot:agent-sessions",
+  browserWidth: "ds-bot:browser-width",
+  browsers: "ds-bot.browser.v2"
+};
+var LEGACY_PREFIXES = ["dsh-bot:", "dsh-bot-team:"];
+var LEGACY_BROWSER_KEYS = ["ds-bot.browser.v1", "dsh-bot.browser.v1"];
+var LEGACY_THEMES = { grok: "mono" };
+function legacyKeys(key) {
+  if (key === STORAGE.browsers) return LEGACY_BROWSER_KEYS;
+  const name = key.slice(key.indexOf(":") + 1);
+  return LEGACY_PREFIXES.map((prefix) => `${prefix}${name}`);
+}
+var migrateBrowsers = (storage) => {
+  if (storage.getItem(STORAGE.browsers) !== null) {
+    for (const key of LEGACY_BROWSER_KEYS) storage.removeItem(key);
+    return;
+  }
+  for (const key of LEGACY_BROWSER_KEYS) {
+    try {
+      const value = storage.getItem(key);
+      if (value === null) continue;
+      const previous = JSON.parse(value) ?? {};
+      const tabs = Object.fromEntries(Object.entries(previous).filter(([, page]) => page && typeof page === "object").map(([botId, page]) => {
+        const tab = { id: `v1-${botId}`, url: page.url ?? "", title: page.title ?? "" };
+        return [botId, { tabs: [tab], active: tab.id }];
+      }));
+      storage.setItem(STORAGE.browsers, JSON.stringify(tabs));
+      for (const earlier of LEGACY_BROWSER_KEYS) storage.removeItem(earlier);
+      return;
+    } catch {
+    }
+  }
+};
+function migrateStorage(storage = globalThis.localStorage) {
+  for (const key of Object.values(STORAGE)) {
+    if (key === STORAGE.browsers) continue;
+    for (const legacy of legacyKeys(key)) {
+      try {
+        const value = storage.getItem(legacy);
+        if (value !== null && storage.getItem(key) === null) storage.setItem(key, value);
+        storage.removeItem(legacy);
+      } catch {
+      }
+    }
+  }
+  try {
+    migrateBrowsers(storage);
+  } catch {
+  }
+  try {
+    const prefs = JSON.parse(storage.getItem(STORAGE.prefs) ?? "null");
+    if (prefs && Object.hasOwn(LEGACY_THEMES, prefs.theme ?? "")) {
+      storage.setItem(STORAGE.prefs, JSON.stringify({ ...prefs, theme: LEGACY_THEMES[prefs.theme] }));
+    }
+  } catch {
+  }
+}
+
+// src/client/surface.js
+function groupsFor({ mode, plain = false }) {
+  return { shell: mode === "bot", conversation: mode === "bot" && !plain };
+}
+var GROUPS = ["shell", "conversation"];
+function disposeAll(disposers, label) {
+  for (const dispose of [...disposers].reverse()) {
+    try {
+      dispose?.();
+    } catch (error) {
+      console.warn(`[ds-bot] ${label}`, error);
+    }
+  }
+}
+function surfaceGroups(install, { onError } = {}) {
+  const mounted = { shell: [], conversation: [] };
+  const withdraw = (group) => {
+    const disposers = mounted[group];
+    mounted[group] = [];
+    disposeAll(disposers, `withdraw ${group}`);
+  };
+  return {
+    reconcile(wanted) {
+      for (const group of [...GROUPS].reverse()) if (!wanted[group]) withdraw(group);
+      for (const group of GROUPS) {
+        if (!wanted[group] || mounted[group].length > 0) continue;
+        const disposers = [];
+        try {
+          for (const step of install[group]()) if (step) disposers.push(step());
+          mounted[group] = disposers;
+        } catch (error) {
+          disposeAll(disposers, `roll back ${group}`);
+          console.warn(`[ds-bot] install ${group}`, error);
+          onError?.(group, error);
+          break;
+        }
+      }
+    },
+    dispose() {
+      for (const group of [...GROUPS].reverse()) withdraw(group);
+    }
+  };
+}
+function freePriority(entries2, { priority, key, id }) {
+  if (priority === void 0) return void 0;
+  const taken = entries2.filter((entry) => (key === void 0 || entry.options?.key === key) && (id === void 0 || entry.options?.id === id)).map((entry) => (entry.options?.priority ?? 0) - 1);
+  return Math.min(priority, ...taken);
+}
+function readMode(storage = globalThis.localStorage) {
+  try {
+    return storage.getItem(STORAGE.surface) === "agent" ? "agent" : "bot";
+  } catch {
+    return "bot";
+  }
+}
+function writeMode(mode, storage = globalThis.localStorage) {
+  try {
+    storage.setItem(STORAGE.surface, mode);
+  } catch {
+  }
+}
+
+// src/client/native-conversation.js
 var import_react10 = require("react");
-var import_react_dom4 = require("react-dom");
-var GoArrow = () => (0, import_react10.createElement)("svg", { width: 14, height: 14, viewBox: "-12 -12 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2.2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true }, (0, import_react10.createElement)("path", { d: "M-7 0H7M2 -5L7 0L2 5" }));
-var MEMORY_NOTICE_MS = 3200;
-var noNews = (select) => select({});
-function useMemoryNotice(ids, useMemoryNews) {
-  const seen = useMemoryNews((map) => Math.max(0, ...ids.map((id) => map?.[id]?.seen ?? 0)));
-  const [shown, setShown] = (0, import_react10.useState)(false);
-  (0, import_react10.useEffect)(() => {
-    const left = seen + MEMORY_NOTICE_MS - Date.now();
-    setShown(seen > 0 && left > 0);
-    if (seen === 0 || left <= 0) return void 0;
-    const timer = setTimeout(() => setShown(false), left);
-    return () => clearTimeout(timer);
-  }, [seen]);
-  return shown;
+var import_dsh_client_ui_primitives2 = require("@deepseek-ai/dsh-client-ui-primitives");
+var BOT_TOOL_NAMES = ["message_bot", "stop_bot", "create_bot", "update_bot", "group_relay", "create_group", "update_group", "delete_group", "post_to_group", "ask_user", "request_secret", "ask_user_question", "read_group_chat", "remember", "forget"];
+function BotToolView(props) {
+  return (0, import_react10.createElement)(ToolCell, { ...props, node: { data: { root: props.block } } });
 }
-function MemoryNotice({ shown }) {
-  const inner = (0, import_react10.useRef)(null);
-  const [width, setWidth] = (0, import_react10.useState)(0);
-  const label = t("Memory updated");
-  (0, import_react10.useLayoutEffect)(() => {
-    if (shown) setWidth(inner.current?.scrollWidth ?? 0);
-  }, [label, shown]);
-  return (0, import_react10.createElement)(
-    "span",
-    { className: "bt-pill-mem", "aria-hidden": true, style: { "--bt-mem-w": `${width}px` } },
-    (0, import_react10.createElement)("span", { className: "bt-pill-mem-in", ref: inner }, (0, import_react10.createElement)("span", { className: "bt-pill-mem-ico" }, (0, import_react10.createElement)(MemoryIcon)), label)
-  );
+function coordinationCss(roster, sessionId) {
+  const hidden = (roster.exchangeTurns?.[sessionId] ?? []).filter((turn) => Number.isSafeInteger(turn) && turn >= 0);
+  const hiddenCss = hidden.map((turn) => `[data-chat-turn="${turn}"]:not([data-chat-flow-kind="turn-trigger"]){display:none!important}`).join("");
+  return hiddenCss + (roster.roomsById[sessionId] ? '[data-chat-flow-kind="assistant-step"]{display:none!important}' : "");
 }
-function HeaderPill({ sessionId, useRoster, useSessions, useSessionStatus, useSession, useMemoryNews, useTurnClock, useUi, useLive, actions }) {
-  const roster = useRoster((value) => value);
-  const title = useSessions((list) => list.byId[sessionId]?.displayTitle ?? list.byId[sessionId]?.title ?? "");
-  const firstTurns = useSessions((list) => {
-    const outline = list.projectionsBySession?.[sessionId]?.values?.turnOutline ?? list.byId[sessionId]?.projectionValues?.turnOutline;
-    return Array.isArray(outline) ? outline.slice(0, 8).map((entry) => entry.turn).join(",") : "";
-  });
-  const hiddenTurns = roster.exchangeTurns?.[sessionId];
-  const visit = useUi((state) => state.visits?.[sessionId]);
-  const opening = useTurnClock((state) => {
-    const first = openingTurn(state[sessionId], firstTurns, hiddenTurns);
-    return first && !unseenSince(visit, first.start) ? clockLabel(first.start) : "";
-  });
-  (0, import_react10.useEffect)(() => {
-    if (opening) document.body.style.setProperty("--bt-first-sep", JSON.stringify(opening));
-    else document.body.style.removeProperty("--bt-first-sep");
-    return () => document.body.style.removeProperty("--bt-first-sep");
-  }, [opening]);
-  const bot = roster.byId[sessionId];
-  const room2 = roster.roomsById[sessionId];
-  const detailsOpen = useUi((state) => state.details === sessionId);
-  const name = bot?.name ?? room2?.name ?? "";
-  const useNews = useMemoryNews ?? noNews;
-  const memoryIds = bot ? [bot.id] : room2?.members ?? [];
-  const notice = useMemoryNotice(memoryIds, useNews);
-  const changed = useNews((map) => latestMemoryChange(map, memoryIds));
-  (0, import_react10.useEffect)(() => {
-    document.body.style.setProperty("--bt-placeholder", JSON.stringify(name ? t("Message {name}", { name }) : t("Message")));
-  }, [name, t("Message")]);
+function NativeBotDetails({ sessionId, actions, useUi, useRoster }) {
+  const open = useUi((state) => state.details === sessionId);
+  const css = useRoster((roster) => coordinationCss(roster, sessionId));
   (0, import_react10.useEffect)(() => {
     actions.beginVisit(sessionId);
     return () => actions.endVisit(sessionId);
   }, [sessionId]);
-  (0, import_react10.useEffect)(() => {
-    if (room2) document.body.dataset.btRoom = "";
-    else delete document.body.dataset.btRoom;
-    return () => {
-      delete document.body.dataset.btRoom;
-    };
-  }, [Boolean(room2)]);
-  const memoryNotice = notice && changed !== null && roster.memory !== false;
-  return (0, import_react10.createElement)(
-    "div",
-    { className: "bt-head" },
-    (0, import_react10.createElement)(
-      "button",
-      {
-        type: "button",
-        className: "bt-pill",
-        "aria-expanded": detailsOpen,
-        "data-memory": memoryNotice ? "updated" : void 0,
-        "aria-label": memoryNotice ? t("Memory updated. Open {name}'s memory", { name: roster.byId[changed]?.name ?? name }) : t("View conversation details"),
-        onClick: () => memoryNotice ? actions.openMemory(changed) : actions.toggleDetails(sessionId)
-      },
-      (0, import_react10.createElement)("span", { className: "bt-header-symbol", "aria-hidden": true }, (0, import_react10.createElement)(room2 ? ChatsIcon : PeopleIcon)),
-      (0, import_react10.createElement)("span", { className: "bt-pill-name" }, bot?.name ?? room2?.name ?? (title || t("New chat"))),
-      (0, import_react10.createElement)(MemoryNotice, { shown: memoryNotice }),
-      (0, import_react10.createElement)("span", { className: "bt-pill-go", "aria-hidden": true }, (0, import_react10.createElement)(GoArrow))
-    ),
-    (0, import_react10.createElement)("span", { className: "bt-sr", role: "status" }, memoryNotice ? t("Memory updated") : ""),
-    (0, import_react10.createElement)(NewMessagePills, { key: sessionId, sessionId, useSessions, useUi, useTurnClock }),
-    (0, import_react10.createElement)(ActivityIndicator, { key: `activity:${sessionId}`, sessionId, useRoster, useSessionStatus, useSession, useLive, actions }),
-    // DSH's way into its right sidebar sits in the session header this pill replaces.
-    actions.hasRightSidebar?.() ? (0, import_react10.createElement)("button", { type: "button", className: "bt-icon-btn bt-head-side", "data-bt-right-sidebar": "", "aria-label": t("Show or hide the right sidebar"), title: t("Right sidebar"), onClick: () => actions.toggleRightSidebar() }, (0, import_react10.createElement)(SidePanelIcon)) : null
-  );
+  return (0, import_react10.createElement)("span", { className: "bt-native-context" }, (0, import_react10.createElement)("style", null, css), (0, import_react10.createElement)("button", {
+    type: "button",
+    className: "bt-native-details",
+    "aria-label": t("View conversation details"),
+    title: t("View conversation details"),
+    "aria-expanded": open,
+    onClick: () => actions.toggleDetails(sessionId)
+  }, (0, import_react10.createElement)(import_dsh_client_ui_primitives2.IconAgentPresetOutlineRegular, { size: 16 })));
 }
-function useTranscriptView() {
-  const [view, setView] = (0, import_react10.useState)(null);
+function NativeTurnProcess({ NativeNode, useRoster, sessionId, turnProcess, ...props }) {
+  const group = useRoster((roster) => Boolean(roster.roomsById[sessionId]));
   (0, import_react10.useEffect)(() => {
-    let frame = 0;
-    let watched = null;
-    const observer = new MutationObserver(() => schedule());
-    const measure = () => {
-      frame = 0;
-      const scroller = document.querySelector("[data-conversation-scroll]");
-      if (scroller !== watched) {
-        observer.disconnect();
-        watched = scroller;
-        if (scroller) observer.observe(scroller, { childList: true, subtree: true });
-      }
-      if (!scroller) {
-        setView(null);
-        return;
-      }
-      const box = scroller.getBoundingClientRect();
-      const headerBottom = document.querySelector('header[class*="_header"]')?.getBoundingClientRect().bottom ?? box.top + 50;
-      const sep = scroller.querySelector(".bt-new-sep");
-      let divider = null;
-      if (sep) {
-        const at = sep.getBoundingClientRect();
-        divider = at.bottom <= headerBottom ? "above" : at.top >= box.bottom ? "below" : "in-view";
-      }
-      const composer = parseFloat(getComputedStyle(scroller).getPropertyValue("--dsh-composer-height")) || 152;
-      const next = {
-        unpinned: scroller.querySelector('[class*="_toBottomSlot"]>button') !== null,
-        divider,
-        center: Math.round(box.left + box.width / 2),
-        top: Math.round(headerBottom + 8),
-        bottom: Math.round(window.innerHeight - box.bottom + composer + 8)
-      };
-      setView((prev) => prev && Object.keys(next).every((key) => prev[key] === next[key]) ? prev : next);
-    };
-    const schedule = () => {
-      if (!frame) frame = requestAnimationFrame(measure);
-    };
-    document.addEventListener("scroll", schedule, true);
-    window.addEventListener("resize", schedule);
-    schedule();
-    return () => {
-      cancelAnimationFrame(frame);
-      observer.disconnect();
-      document.removeEventListener("scroll", schedule, true);
-      window.removeEventListener("resize", schedule);
-    };
-  }, []);
-  return view;
+    if (group && turnProcess?.foldable && !turnProcess.open) turnProcess.setOpen(true);
+  }, [group, turnProcess]);
+  return NativeNode ? (0, import_react10.createElement)(NativeNode, {
+    ...props,
+    sessionId,
+    turnProcess: group && turnProcess ? { ...turnProcess, foldable: false, open: true } : turnProcess
+  }) : null;
 }
-function NewMessagePills({ sessionId, useSessions, useUi, useTurnClock }) {
-  const replies = useSessions((list) => {
-    const outline = list.projectionsBySession?.[sessionId]?.values?.turnOutline ?? list.byId[sessionId]?.projectionValues?.turnOutline;
-    return Array.isArray(outline) ? outline.reduce((count, entry) => count + (entry.response ? 1 : 0), 0) : 0;
-  });
-  const visit = useUi((state) => state.visits?.[sessionId]);
-  const unread = useTurnClock((state) => {
-    if (typeof visit?.seen !== "number") return 0;
-    let count = 0;
-    for (const entry of Object.values(state[sessionId] ?? {})) {
-      if (entry.first !== void 0 && entry.first > visit.seen && entry.first <= visit.entered) count += 1;
-    }
-    return count;
-  });
-  const view = useTranscriptView();
-  const unpinned = view?.unpinned === true;
-  const [release, setRelease] = (0, import_react10.useState)({ base: null, dismissed: false });
-  const [above, setAbove] = (0, import_react10.useState)({ seen: false, dismissed: false });
-  (0, import_react10.useEffect)(() => {
-    setRelease({ base: unpinned ? replies : null, dismissed: false });
-  }, [unpinned]);
-  (0, import_react10.useEffect)(() => {
-    if (view?.divider === "in-view") setAbove((state) => state.seen ? state : { ...state, seen: true });
-  }, [view?.divider]);
-  const fresh = release.base === null ? 0 : replies - release.base;
-  const showDown = unpinned && fresh > 0 && !release.dismissed;
-  const showUp = view?.divider === "above" && !above.seen && !above.dismissed;
-  (0, import_react10.useEffect)(() => {
-    const scroller = document.querySelector("[data-conversation-scroll]");
-    if (!scroller) return void 0;
-    scroller.toggleAttribute("data-bt-news", showDown);
-    return () => scroller.removeAttribute("data-bt-news");
-  }, [showDown]);
-  if (!view || !showDown && !showUp) return null;
-  const label = (count) => count === 1 ? t("1 new message") : count > 0 ? t("{count} new messages", { count }) : t("New messages");
-  const pill = (direction, count, style, onJump, onDismiss) => (0, import_react10.createElement)(
-    "div",
-    { className: "bt-news", "data-direction": direction, style },
-    (0, import_react10.createElement)(
-      "button",
-      { type: "button", className: "bt-news-jump", onClick: onJump },
-      (0, import_react10.createElement)("span", { className: "bt-news-ico" }, (0, import_react10.createElement)(direction === "up" ? ArrowUpIcon : ArrowDownIcon)),
-      label(count)
-    ),
-    (0, import_react10.createElement)("button", {
-      type: "button",
-      className: "bt-news-x",
-      "aria-label": t("Dismiss new messages"),
-      onClick: (event) => {
-        event.stopPropagation();
-        onDismiss();
-      }
-    }, (0, import_react10.createElement)(CloseIcon))
-  );
-  const toLatest = () => {
-    const scroller = document.querySelector("[data-conversation-scroll]");
-    const back = scroller?.querySelector('[class*="_toBottomSlot"]>button');
-    if (back) back.click();
-    else scroller?.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
+function installTurnProcess(ctx, face) {
+  const name = "conversation.chat.node";
+  let current;
+  let release = () => {
   };
-  const toDivider = () => document.querySelector("[data-conversation-scroll] .bt-new-sep")?.scrollIntoView({ block: "center", behavior: "smooth" });
-  return (0, import_react_dom4.createPortal)(
-    (0, import_react10.createElement)(
-      import_react10.Fragment,
-      null,
-      showUp ? pill("up", unread, { left: view.center, top: view.top }, toDivider, () => setAbove((state) => ({ ...state, dismissed: true }))) : null,
-      showDown ? pill("down", fresh, { left: view.center, bottom: view.bottom }, toLatest, () => setRelease((state) => ({ ...state, dismissed: true }))) : null
-    ),
-    document.body
-  );
+  let updating = false;
+  return ctx.slots.inject(name, () => {
+    const sync = () => {
+      if (updating) return;
+      const original = ctx.slots.entries(name).find((entry) => entry.options.key === "turn-process" && entry.component !== NativeTurnProcess);
+      if (!original || original === current) return;
+      updating = true;
+      try {
+        current = original;
+        release();
+        release = ctx.slots.register({
+          name,
+          key: "turn-process",
+          locale: original.locale,
+          priority: freePriority(ctx.slots.entries(name), { key: "turn-process", priority: -100 }),
+          inject: (...args) => ({ ...original.inject?.(...args), ...face(), NativeNode: original.component })
+        }, NativeTurnProcess);
+      } finally {
+        updating = false;
+      }
+    };
+    const off = ctx.slots.subscribe(name, sync);
+    sync();
+    return () => {
+      off();
+      release();
+    };
+  });
 }
 
 // src/client/composer.js
 var import_react11 = require("react");
-var import_react_dom5 = require("react-dom");
+var import_react_dom4 = require("react-dom");
 var speechApi = () => window.SpeechRecognition ?? window.webkitSpeechRecognition;
 var keepComposerFocus = (event) => event.preventDefault();
 function useDictation(onText) {
@@ -6131,7 +6059,7 @@ function useDictation(onText) {
   const stop = () => recognition.current?.stop();
   return { listening, note, start, stop };
 }
-function ComposerVoice({ sessionId, inputActions, actions, useUi }) {
+function ComposerVoice({ sessionId, inputActions, actions, useUi, native = false }) {
   const dictation = useDictation((text, final) => {
     if (final && inputActions) inputActions.insertText(text, inputActions.captureInsertion());
   });
@@ -6152,7 +6080,7 @@ function ComposerVoice({ sessionId, inputActions, actions, useUi }) {
       selection?.collapseToEnd();
     }
   }, [quote?.token]);
-  if (sessionId === void 0) return null;
+  if (sessionId === void 0 || native) return null;
   const pluginMic = actions.speech() !== void 0;
   return (0, import_react11.createElement)(
     import_react11.Fragment,
@@ -6248,7 +6176,7 @@ function ComposerPlus({ sessionId, inputActions, useRoster, actions }) {
       onMouseDown: keepComposerFocus,
       onClick: toggle
     }, (0, import_react11.createElement)(PlusIcon)),
-    shown ? (0, import_react_dom5.createPortal)((0, import_react11.createElement)(
+    shown ? (0, import_react_dom4.createPortal)((0, import_react11.createElement)(
       "div",
       {
         ref: menu,
@@ -6704,7 +6632,7 @@ ${shown}`, { axis: "y", ...QUICK_EDGES });
 
 // src/client/model-menu.js
 var import_react14 = require("react");
-var import_react_dom6 = require("react-dom");
+var import_react_dom5 = require("react-dom");
 var MENU_EXIT_MS = 120;
 function groupModels(models) {
   const groups = /* @__PURE__ */ new Map();
@@ -6892,7 +6820,7 @@ function ModelMenu({ bot, roster, actions, run, wide = false, onPick, onPickEffo
       ),
       (0, import_react14.createElement)(Caret)
     ),
-    shownPlace ? (0, import_react_dom6.createPortal)((0, import_react14.createElement)(
+    shownPlace ? (0, import_react_dom5.createPortal)((0, import_react14.createElement)(
       "div",
       { ref: menu, className: `bt-menu bt-model-menu${shownPlace.bottom !== void 0 ? " bt-menu-up" : ""}`, role: "menu", "aria-label": t("Model for {name}", { name: bot.name }), style: shownPlace, "data-leaving": leaving || void 0 },
       models.length > 0 ? (0, import_react14.createElement)(ModelRows, { roster, current, onPick: pick2 }) : (0, import_react14.createElement)("div", { className: "bt-model-none" }, t("No models are set up in DeepSeek Harness yet.")),
@@ -7034,7 +6962,7 @@ var MODEL_CSS = `
 
 // src/client/folder-menu.js
 var import_react15 = require("react");
-var import_react_dom7 = require("react-dom");
+var import_react_dom6 = require("react-dom");
 var folderName = (path) => String(path).replace(/[\\/]+$/, "").split(/[\\/]/).pop() || String(path);
 var Tick = ({ on }) => (0, import_react15.createElement)("span", { className: "bt-model-tick", "aria-hidden": true }, on ? (0, import_react15.createElement)(CheckIcon) : null);
 function FolderMenu({ value, group = false, actions, run, onPick, wide = false }) {
@@ -7163,7 +7091,7 @@ function FolderMenu({ value, group = false, actions, run, onPick, wide = false }
       ),
       (0, import_react15.createElement)(Caret)
     ),
-    shownPlace ? (0, import_react_dom7.createPortal)((0, import_react15.createElement)(
+    shownPlace ? (0, import_react_dom6.createPortal)((0, import_react15.createElement)(
       "div",
       { ref: menu, className: `bt-menu bt-model-menu bt-folder-menu${shownPlace.bottom !== void 0 ? " bt-menu-up" : ""}`, role: "menu", "aria-label": t("Working folder"), style: shownPlace, "data-leaving": leaving || void 0 },
       shownView,
@@ -11394,71 +11322,6 @@ function AgentMenu({ menu, roster, actions, leaving }) {
   );
 }
 
-// src/client/storage.js
-var STORAGE = {
-  unread: "ds-bot:unread",
-  reactions: "ds-bot:reactions",
-  seen: "ds-bot:seen",
-  prefs: "ds-bot:prefs",
-  surface: "ds-bot:surface",
-  agentSessions: "ds-bot:agent-sessions",
-  browserWidth: "ds-bot:browser-width",
-  browsers: "ds-bot.browser.v2"
-};
-var LEGACY_PREFIXES = ["dsh-bot:", "dsh-bot-team:"];
-var LEGACY_BROWSER_KEYS = ["ds-bot.browser.v1", "dsh-bot.browser.v1"];
-var LEGACY_THEMES = { grok: "mono" };
-function legacyKeys(key) {
-  if (key === STORAGE.browsers) return LEGACY_BROWSER_KEYS;
-  const name = key.slice(key.indexOf(":") + 1);
-  return LEGACY_PREFIXES.map((prefix) => `${prefix}${name}`);
-}
-var migrateBrowsers = (storage) => {
-  if (storage.getItem(STORAGE.browsers) !== null) {
-    for (const key of LEGACY_BROWSER_KEYS) storage.removeItem(key);
-    return;
-  }
-  for (const key of LEGACY_BROWSER_KEYS) {
-    try {
-      const value = storage.getItem(key);
-      if (value === null) continue;
-      const previous = JSON.parse(value) ?? {};
-      const tabs = Object.fromEntries(Object.entries(previous).filter(([, page]) => page && typeof page === "object").map(([botId, page]) => {
-        const tab = { id: `v1-${botId}`, url: page.url ?? "", title: page.title ?? "" };
-        return [botId, { tabs: [tab], active: tab.id }];
-      }));
-      storage.setItem(STORAGE.browsers, JSON.stringify(tabs));
-      for (const earlier of LEGACY_BROWSER_KEYS) storage.removeItem(earlier);
-      return;
-    } catch {
-    }
-  }
-};
-function migrateStorage(storage = globalThis.localStorage) {
-  for (const key of Object.values(STORAGE)) {
-    if (key === STORAGE.browsers) continue;
-    for (const legacy of legacyKeys(key)) {
-      try {
-        const value = storage.getItem(legacy);
-        if (value !== null && storage.getItem(key) === null) storage.setItem(key, value);
-        storage.removeItem(legacy);
-      } catch {
-      }
-    }
-  }
-  try {
-    migrateBrowsers(storage);
-  } catch {
-  }
-  try {
-    const prefs = JSON.parse(storage.getItem(STORAGE.prefs) ?? "null");
-    if (prefs && Object.hasOwn(LEGACY_THEMES, prefs.theme ?? "")) {
-      storage.setItem(STORAGE.prefs, JSON.stringify({ ...prefs, theme: LEGACY_THEMES[prefs.theme] }));
-    }
-  } catch {
-  }
-}
-
 // src/client/member-status.js
 var import_react32 = require("react");
 var NO_WORK = { bots: {}, rooms: {}, approvals: [] };
@@ -11930,6 +11793,7 @@ function DetailsDrawer({ sessionId, startRenaming, startTab, hasStrip, roster, a
     { className: "bt-drawer-top", "data-move": side },
     bot || room2 ? (0, import_react33.createElement)("button", { type: "button", className: "bt-round", "aria-label": bot ? t("Edit Bot") : t("Group settings"), title: bot ? t("Edit Bot") : t("Group settings"), "data-info-row": "settings", onClick: () => setView("settings") }, (0, import_react33.createElement)(GearIcon)) : null,
     bot && roster.browser === true && actions.openBrowser ? (0, import_react33.createElement)("button", { type: "button", className: "bt-round", "aria-label": t("Open browser"), title: t("Open this Bot's browser"), onClick: () => actions.openBrowser(sessionId) }, (0, import_react33.createElement)(GlobeIcon)) : null,
+    bot ? (0, import_react33.createElement)("button", { type: "button", className: "bt-round", "aria-label": t("Start voice chat"), title: t("Voice chat"), onClick: () => actions.openVoice(sessionId) }, (0, import_react33.createElement)(WaveIcon)) : null,
     bot || room2 ? (0, import_react33.createElement)("button", { type: "button", className: "bt-round", "aria-label": copied ? t("Copied conversation") : t("Share conversation"), title: copied ? t("Copied") : t("Copy conversation as Markdown"), onClick: share }, copied ? (0, import_react33.createElement)("span", { key: "copied", className: "bt-pop-in" }, "✓") : (0, import_react33.createElement)(ShareIcon)) : null,
     hasStrip ? null : (0, import_react33.createElement)("button", { type: "button", className: "bt-round", "aria-label": t("Close details"), onClick: close }, (0, import_react33.createElement)(CloseIcon))
   );
@@ -12019,7 +11883,7 @@ function DetailsDrawer({ sessionId, startRenaming, startTab, hasStrip, roster, a
 
 // src/client/browser-pane.js
 var import_react34 = require("react");
-var import_react_dom8 = require("react-dom");
+var import_react_dom7 = require("react-dom");
 var PANEL_LINGER_MS = 300;
 var WIDTH_KEY = STORAGE.browserWidth;
 var DEFAULT_WIDTH = 520;
@@ -12551,7 +12415,7 @@ function BotPanel({ pane, leaving, roster, actions, useSessions, useSessionStatu
     leaving ? null : (0, import_react34.createElement)("div", { className: "bt-panel-grip", role: "separator", "aria-orientation": "vertical", "aria-label": t("Resize panel"), onPointerDown: startResize }),
     // Over the whole window while dragging: the cursor stays a resize cursor and the
     // pages underneath (the chat, the guest) see no pointer.
-    dragging ? (0, import_react_dom8.createPortal)((0, import_react34.createElement)("div", { className: "bt-drag-shield", "aria-hidden": true }), document.body) : null,
+    dragging ? (0, import_react_dom7.createPortal)((0, import_react34.createElement)("div", { className: "bt-drag-shield", "aria-hidden": true }), document.body) : null,
     hasStrip ? (0, import_react34.createElement)(PanelStrip, { bot, subject: pane.id, view, ids: tabState.ids, active, reading, onView: switchView, actions: panelActions, useBrowserPages }) : null,
     view === "browser" && bot ? (0, import_react34.createElement)(BrowserView, { key: `browser:${active}`, bot, tabId: active, leaving, landed: landed && !settling, actions, useBrowserPages }) : (0, import_react34.createElement)(
       "div",
@@ -12654,7 +12518,7 @@ var BROWSER_CSS = `
 
 // src/client/overlays.js
 var import_react35 = require("react");
-var import_react_dom9 = require("react-dom");
+var import_react_dom8 = require("react-dom");
 var DIALOG_EXIT_MS = 160;
 var MENU_EXIT_MS3 = 120;
 function Overlays({ useRoster, useUi, useSessions, useSessionStatus, useActivity, useWork, useRegistry, useBrowserPages, useBrowserTabs, useUpdate, actions }) {
@@ -12685,14 +12549,14 @@ function Overlays({ useRoster, useUi, useSessions, useSessionStatus, useActivity
   return (0, import_react35.createElement)(
     import_react35.Fragment,
     null,
-    pane ? (0, import_react_dom9.createPortal)((0, import_react35.createElement)(BotPanel, { pane, leaving: open === null, roster, actions, useSessions, useSessionStatus, useActivity, useWork, useBrowserTabs, useBrowserPages }), document.body) : null,
-    ui2.newChat ? (0, import_react_dom9.createPortal)((0, import_react35.createElement)(NewChat, { key: ui2.newChat, mode: ui2.newChat, roster, actions }), document.body) : null,
-    ui2.palette ? (0, import_react_dom9.createPortal)((0, import_react35.createElement)(CommandPalette, { key: ui2.palette.token, start: ui2.palette.query, token: ui2.palette.token, roster, actions, useSessions }), document.body) : null,
-    ui2.exchange ? (0, import_react_dom9.createPortal)((0, import_react35.createElement)(ExchangeDialog, { pair: ui2.exchange, roster, actions }), document.body) : null,
-    ui2.voice ? (0, import_react_dom9.createPortal)((0, import_react35.createElement)(VoiceMode, { key: ui2.voice, sessionId: ui2.voice, roster, actions, useSessions, useSessionStatus }), document.body) : null,
-    menu ? (0, import_react_dom9.createPortal)((0, import_react35.createElement)(ContextMenu, { key: `${menu.kind ?? ""}:${menu.id}:${menu.x}:${menu.y}`, menu, roster, actions, leaving: menuLeaving }), document.body) : null,
-    settings ? (0, import_react_dom9.createPortal)((0, import_react35.createElement)(SettingsDialog, { page: settings.page, id: settings.id, roster, actions, useUpdate, leaving: settingsLeaving }), document.body) : null,
-    memory && roster.byId[memory] ? (0, import_react_dom9.createPortal)((0, import_react35.createElement)(MemoryDialog, { key: memory, bot: roster.byId[memory], actions, leaving: memoryLeaving }), document.body) : null
+    pane ? (0, import_react_dom8.createPortal)((0, import_react35.createElement)(BotPanel, { pane, leaving: open === null, roster, actions, useSessions, useSessionStatus, useActivity, useWork, useBrowserTabs, useBrowserPages }), document.body) : null,
+    ui2.newChat ? (0, import_react_dom8.createPortal)((0, import_react35.createElement)(NewChat, { key: ui2.newChat, mode: ui2.newChat, roster, actions }), document.body) : null,
+    ui2.palette ? (0, import_react_dom8.createPortal)((0, import_react35.createElement)(CommandPalette, { key: ui2.palette.token, start: ui2.palette.query, token: ui2.palette.token, roster, actions, useSessions }), document.body) : null,
+    ui2.exchange ? (0, import_react_dom8.createPortal)((0, import_react35.createElement)(ExchangeDialog, { pair: ui2.exchange, roster, actions }), document.body) : null,
+    ui2.voice ? (0, import_react_dom8.createPortal)((0, import_react35.createElement)(VoiceMode, { key: ui2.voice, sessionId: ui2.voice, roster, actions, useSessions, useSessionStatus }), document.body) : null,
+    menu ? (0, import_react_dom8.createPortal)((0, import_react35.createElement)(ContextMenu, { key: `${menu.kind ?? ""}:${menu.id}:${menu.x}:${menu.y}`, menu, roster, actions, leaving: menuLeaving }), document.body) : null,
+    settings ? (0, import_react_dom8.createPortal)((0, import_react35.createElement)(SettingsDialog, { page: settings.page, id: settings.id, roster, actions, useUpdate, leaving: settingsLeaving }), document.body) : null,
+    memory && roster.byId[memory] ? (0, import_react_dom8.createPortal)((0, import_react35.createElement)(MemoryDialog, { key: memory, bot: roster.byId[memory], actions, leaving: memoryLeaving }), document.body) : null
   );
 }
 
@@ -13520,68 +13384,6 @@ function serveBrowserReads({ browsers, post, clientId = globalThis.crypto.random
   };
 }
 
-// src/client/surface.js
-function groupsFor({ mode, plain = false }) {
-  return { shell: mode === "bot", conversation: mode === "bot" && !plain };
-}
-var GROUPS = ["shell", "conversation"];
-function disposeAll(disposers, label) {
-  for (const dispose of [...disposers].reverse()) {
-    try {
-      dispose?.();
-    } catch (error) {
-      console.warn(`[ds-bot] ${label}`, error);
-    }
-  }
-}
-function surfaceGroups(install, { onError } = {}) {
-  const mounted = { shell: [], conversation: [] };
-  const withdraw = (group) => {
-    const disposers = mounted[group];
-    mounted[group] = [];
-    disposeAll(disposers, `withdraw ${group}`);
-  };
-  return {
-    reconcile(wanted) {
-      for (const group of [...GROUPS].reverse()) if (!wanted[group]) withdraw(group);
-      for (const group of GROUPS) {
-        if (!wanted[group] || mounted[group].length > 0) continue;
-        const disposers = [];
-        try {
-          for (const step of install[group]()) if (step) disposers.push(step());
-          mounted[group] = disposers;
-        } catch (error) {
-          disposeAll(disposers, `roll back ${group}`);
-          console.warn(`[ds-bot] install ${group}`, error);
-          onError?.(group, error);
-          break;
-        }
-      }
-    },
-    dispose() {
-      for (const group of [...GROUPS].reverse()) withdraw(group);
-    }
-  };
-}
-function freePriority(entries2, { priority, key, id }) {
-  if (priority === void 0) return void 0;
-  const taken = entries2.filter((entry) => (key === void 0 || entry.options?.key === key) && (id === void 0 || entry.options?.id === id)).map((entry) => (entry.options?.priority ?? 0) - 1);
-  return Math.min(priority, ...taken);
-}
-function readMode(storage = globalThis.localStorage) {
-  try {
-    return storage.getItem(STORAGE.surface) === "agent" ? "agent" : "bot";
-  } catch {
-    return "bot";
-  }
-}
-function writeMode(mode, storage = globalThis.localStorage) {
-  try {
-    storage.setItem(STORAGE.surface, mode);
-  } catch {
-  }
-}
-
 // src/client/user-message.js
 var import_react36 = require("react");
 var ui = __toESM(require("@deepseek-ai/dsh-client-ui-primitives"), 1);
@@ -13730,12 +13532,12 @@ function noticeApprovals({ work, roster, shownSession, openSession, since: since
 
 // src/client/bot-entry.js
 var import_react37 = require("react");
-var import_dsh_client_ui_primitives2 = require("@deepseek-ai/dsh-client-ui-primitives");
+var import_dsh_client_ui_primitives3 = require("@deepseek-ai/dsh-client-ui-primitives");
 function BotPanelIcon({ size }) {
-  return (0, import_react37.createElement)(import_dsh_client_ui_primitives2.IconAgentPresetOutlineRegular, { size });
+  return (0, import_react37.createElement)(import_dsh_client_ui_primitives3.IconAgentPresetOutlineRegular, { size });
 }
 function ChatPanelIcon({ size }) {
-  return (0, import_react37.createElement)(import_dsh_client_ui_primitives2.IconNewChatOutlineRegular, { size });
+  return (0, import_react37.createElement)(import_dsh_client_ui_primitives3.IconNewChatOutlineRegular, { size });
 }
 function BotEntry({ actions, useSurface }) {
   const mode = useSurface((state) => state.mode);
@@ -13846,6 +13648,10 @@ button:hover .bt-you,.bt-account[aria-expanded=true] .bt-you{background:none}
 :is(.bt-round,.bt-new-chat,.bt-row,.bt-connect,.bt-account,.bt-pill):focus-visible{outline:2px solid var(--bt-accent);outline-offset:-2px}
 `;
 var NATIVE_CONVERSATION_CSS = `
+.bt-native-context{display:inline-flex;align-items:center}
+.bt-native-details{display:inline-flex;align-items:center;justify-content:center;flex:none;width:24px;height:24px;padding:0;border:0;border-radius:var(--dsw-radius-sm,8px);background:none;color:var(--dsw-alias-label-tertiary);cursor:pointer}
+.bt-native-details:hover,.bt-native-details[aria-expanded=true]{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
+.bt-native-details:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}
 .bt-head{justify-content:flex-start;height:36px}
 .bt-pill{height:32px;padding:4px 8px;gap:8px;border:0;border-radius:var(--dsw-radius-sm,8px);box-shadow:none;background:none;max-width:calc(100% - 48px)}
 .bt-pill:hover{background:var(--bt-hover)}
@@ -13863,7 +13669,6 @@ var NATIVE_CONVERSATION_CSS = `
 .bt-bubble [class*="_markdown"]>*+*{margin-top:14px}
 .bt-ubody{border-radius:var(--dsw-radius-md,12px);padding:10px 16px;line-height:1.6}
 .bt-plus{border-radius:var(--dsw-radius-sm,8px);background:none;box-shadow:none}
-[data-composer-placeholder]{inset:4px 8px auto 14px!important}
 .bt-icon-btn{border-radius:var(--dsw-radius-sm,8px)}
 `;
 
@@ -14406,23 +14211,6 @@ function apply(ctx) {
     shownSession: () => Object.values(ctx.sessions.list.getSnapshot().byId ?? {}).find((session) => (session?.retainedBy?.mainView ?? 0) > 0)?.id,
     openSession: (id) => actions.openSession(id)
   }), "ds-bot: approval notifications");
-  const assistantFace = (sessionId) => {
-    const binding = ctx.sessions.binding(sessionId);
-    if (binding === void 0) throw new Error(`ds-bot: unknown session "${sessionId}"`);
-    const chat = ctx.uiConversation.binding(binding).target("chat");
-    return { ...face(), keyedHooks: {
-      turnSteps: (turn) => {
-        const snapshot = chat.getSnapshot();
-        if (snapshot === void 0) throw new Error("ds-bot: Chat target is unavailable");
-        return snapshot.nodes.turnDataSource(Number(turn), "assistant-step");
-      },
-      turnContext: (turn) => {
-        const snapshot = chat.getSnapshot();
-        if (snapshot === void 0) throw new Error("ds-bot: Chat target is unavailable");
-        return snapshot.nodes.turnDataSource(Number(turn), "context");
-      }
-    } };
-  };
   const BOT_PRIORITY = -100;
   const shadow = (name, options, component) => ctx.slots.inject(name, () => ctx.slots.register({
     name,
@@ -14478,28 +14266,15 @@ function apply(ctx) {
     () => installCompiledStyles(CONVERSATION_CSS + NATIVE_CONVERSATION_CSS, "conversation"),
     () => installMentions(),
     () => installAtMenu(),
-    () => shadow("conversation.session.header", { priority: BOT_PRIORITY, inject: face }, HeaderPill),
-    () => shadow("conversation.chat.node", { key: "assistant-step", priority: BOT_PRIORITY, locale: "chat", inject: assistantFace }, AssistantCell),
+    () => shadow("conversation.session.header.actions", { id: "bot-details", order: 100, inject: face }, NativeBotDetails),
     () => shadow("conversation.chat.node", { key: "turn-trigger", priority: BOT_PRIORITY, locale: "chat", inject: face }, TriggerCell),
-    () => shadow("conversation.chat.node", { key: "tool-call", priority: BOT_PRIORITY, locale: "chat", inject: face }, ToolCell),
-    () => shadow("conversation.chat.node", { key: "turn-process", priority: BOT_PRIORITY, locale: "chat", inject: face }, TurnProcessCell),
-    // DSH's own turn tail stays, so what other plugins add there shows, such as the
-    // cards of the files a turn delivered; its copy and branch row is hidden.
-    () => shadow("conversation.chat.turnTail", { id: "bot-turn-separators", order: 1e3, inject: face }, TurnTailCell),
+    () => installTurnProcess(ctx, face),
+    ...BOT_TOOL_NAMES.map((key) => () => shadow("tool.call.toolview", { key, priority: BOT_PRIORITY, inject: face }, BotToolView)),
     // A Bot condenses its conversation without telling anyone; the chat keeps showing
     // every message.
     () => shadow("conversation.chat.node", { key: "question-reply", priority: BOT_PRIORITY, locale: "chat" }, AnsweredCell),
     () => shadow("conversation.chat.node", { key: "compaction", priority: BOT_PRIORITY, locale: "chat" }, Nothing),
-    ...canDrawUserMessages() ? ["user", "steering"].map((key) => () => shadow("conversation.chat.node", { key, priority: BOT_PRIORITY, locale: "chat", inject: face }, UserMessageCell)) : [],
-    () => shadow("conversation.input.permission", { priority: BOT_PRIORITY }, Nothing),
-    () => shadow("conversation.input.plan", { priority: BOT_PRIORITY }, Nothing),
-    // The composer carries no model picker or run statistics; a Bot's model lives
-    // in its details panel.
-    () => shadow("conversation.input.model", { priority: BOT_PRIORITY }, Nothing),
-    () => shadow("conversation.composer.dock", { id: "activity", order: 0, priority: BOT_PRIORITY }, Nothing),
-    () => shadow("conversation.composer.dock", { id: "usage", order: 1, priority: BOT_PRIORITY }, Nothing),
-    () => shadow("conversation.input.left", { id: "bot-plus", order: -100, inject: face }, ComposerPlus),
-    () => shadow("conversation.input.right", { id: "bot-voice", order: 100, inject: face }, ComposerVoice),
+    () => shadow("conversation.input.left", { id: "bot-quote", order: -100, inject: () => ({ ...face(), native: true }) }, ComposerVoice),
     () => shadow("conversation.composer", {
       priority: BOT_PRIORITY,
       select: (owner) => owner.pendingInteraction?.kind === "question" ? owner.pendingInteraction : null
