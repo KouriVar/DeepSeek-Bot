@@ -204,7 +204,7 @@ function EventLine({ prefix, bots, joiner = t('and'), onOpen, whole = false }) {
 // One Bot message inside a group chat: avatar, name (with its group role), bubble.
 function GroupMessage({ bot, text, texts = [text], room, roster, actions, msgKey, useUi, whole, continuation = false }) {
   const lead = h('button', { type: 'button', className: 'bt-lead', 'aria-label': t("Open {name}'s chat", { name: bot.name }), onClick: () => actions.openSession(bot.id) },
-    h(BotMark, { bot, size: 32 }))
+    h(BotMark, { bot, size: 28 }))
   return h('div', { className: 'bt-group-msg', 'data-continuation': continuation || undefined }, continuation ? null : lead,
     continuation ? null : h('span', { className: 'bt-group-name' }, bot.name,
       room?.admin === bot.id ? h('span', { className: 'bt-group-role' }, t('Admin')) : null),
@@ -700,7 +700,7 @@ function GroupReplies({ sessionId, callId, done, content, roster, actions, useUi
       const bot = roster.byId[id]
       if (!bot) return null
       return h('div', { key: `pending-${id}`, className: 'bt-activity' },
-        h(BotMark, { bot: bot, size: 32, state: speakerTool ? toolState(speakerTool) : 'thinking' }),
+        h(BotMark, { bot: bot, size: 28, state: speakerTool ? toolState(speakerTool) : 'thinking' }),
         h(Shimmer, null, speakerDoing ? `${bot.name} · ${speakerDoing}…` : t('{name} is typing…', { name: bot.name })))
     }))
 }

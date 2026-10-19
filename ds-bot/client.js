@@ -2216,15 +2216,15 @@ body[data-bt-motion=quiet] .bt-mark[data-poke]{cursor:default}
 .bt-bubble ul,.bt-bubble ol{margin:4px 0;padding-left:20px}
 .bt-bubble a[href^="${MENTION_ORIGIN}"]{text-decoration:none;font-weight:400;cursor:pointer;white-space:nowrap}
 .bt-bubble a[href^="${MENTION_ORIGIN}"]::before{content:"";display:inline-block;width:16px;height:16px;margin-right:3px;vertical-align:-3px;background:currentColor;-webkit-mask:${DEFAULT_MASK} center/contain no-repeat;mask:${DEFAULT_MASK} center/contain no-repeat}
-.bt-group-msg{display:grid;grid-template-columns:32px minmax(0,1fr);column-gap:12px;row-gap:2px;align-items:start;margin:20px 0 0}
+.bt-group-msg{display:grid;grid-template-columns:28px minmax(0,1fr);column-gap:8px;row-gap:8px;align-items:center;margin:20px 0 0}
 .bt-group-msg:first-child{margin-top:0}
 .bt-lead{flex:none;display:flex;margin-bottom:1px}
 button.bt-lead{border:0;background:none;padding:0;cursor:pointer}
 /* Rows without the avatar start where the bubble beside it starts: 22px avatar + 8px gap. */
 .bt-astack[data-lead]>.bt-msg:not(:last-child)>.bt-msg-line,.bt-astack[data-lead] .bt-reacts{margin-left:30px}
-.bt-group-msg>.bt-lead{grid-column:1;grid-row:1/span 2;align-items:center;justify-content:center;width:32px;height:32px;margin:0}
-.bt-group-name{grid-column:2;display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-width:0;min-height:20px;margin:0;font-size:13px;line-height:20px;font-weight:600;color:var(--bt-ink)}
-.bt-group-msg>.bt-astack{grid-column:2;min-width:0;width:100%}
+.bt-group-msg>.bt-lead{grid-column:1;grid-row:1;align-items:center;justify-content:center;width:28px;height:28px;margin:0}
+.bt-group-name{grid-column:2;display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-width:0;min-height:28px;margin:0;font-size:13px;line-height:20px;font-weight:600;color:var(--bt-ink)}
+.bt-group-msg>.bt-astack{grid-column:1/-1;min-width:0;width:100%}
 .bt-x{border:0;background:none;color:var(--bt-ink-2);cursor:pointer;width:24px;height:24px;border-radius:6px;font-size:16px;line-height:24px;padding:0;transition:background-color .12s ease,color .12s ease,${spring(SPRING_TAP, "scale")}}
 .bt-x:hover{background:var(--bt-hover);color:var(--bt-ink)}
 
@@ -2831,9 +2831,9 @@ var CONVERSATION_CSS = `
 .bt-activity{display:flex;align-items:center;gap:10px;margin:8px 0 4px 2px;font-size:14px;color:var(--bt-ink-2)}
 .bt-group-replies{display:flex;flex-direction:column;gap:20px;min-width:0;width:100%}
 .bt-group-replies>.bt-group-msg{margin:0}
-.bt-group-replies>.bt-event{justify-content:flex-start;box-sizing:border-box;padding-inline-start:44px;margin:0;min-height:20px;font-size:12px;line-height:20px}
+.bt-group-replies>.bt-event{justify-content:flex-start;box-sizing:border-box;padding-inline-start:0;margin:0;min-height:20px;font-size:12px;line-height:20px}
 .bt-group-replies>.bt-event button.bt-event-whole{padding:0;border-radius:4px;height:auto;min-height:20px}
-.bt-group-replies>.bt-activity{gap:12px;margin:0;min-height:32px;font-size:13px}
+.bt-group-replies>.bt-activity{gap:8px;margin:0;min-height:28px;font-size:13px}
 .bt-group-replies>.bt-activity>.bt-mark{flex:none}
 /* Empty coordination nodes take no transcript space. */
 [class*="_flowItem"]:has(> [data-slot="conversation.chat.node"]:empty){display:none!important}
@@ -4240,7 +4240,7 @@ function GroupMessage({ bot, text, texts: texts2 = [text], room: room2, roster, 
   const lead = (0, import_react7.createElement)(
     "button",
     { type: "button", className: "bt-lead", "aria-label": t("Open {name}'s chat", { name: bot.name }), onClick: () => actions.openSession(bot.id) },
-    (0, import_react7.createElement)(BotMark, { bot, size: 32 })
+    (0, import_react7.createElement)(BotMark, { bot, size: 28 })
   );
   return (0, import_react7.createElement)(
     "div",
@@ -4744,7 +4744,7 @@ function GroupReplies({ sessionId, callId, done, content, roster, actions, useUi
       return (0, import_react7.createElement)(
         "div",
         { key: `pending-${id}`, className: "bt-activity" },
-        (0, import_react7.createElement)(BotMark, { bot, size: 32, state: speakerTool ? toolState(speakerTool) : "thinking" }),
+        (0, import_react7.createElement)(BotMark, { bot, size: 28, state: speakerTool ? toolState(speakerTool) : "thinking" }),
         (0, import_react7.createElement)(Shimmer, null, speakerDoing ? `${bot.name} · ${speakerDoing}…` : t("{name} is typing…", { name: bot.name }))
       );
     })

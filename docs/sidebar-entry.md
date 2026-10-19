@@ -118,3 +118,12 @@ mock-backed group and the signed-in Desktop group's long reply in the light
 theme, including role text, work notices and the floating hover toolbar. Reviewed
 a contact sheet of the reference, current screen and before/after captures.
 Installed through the official Desktop plugin CLI.
+
+Version `0.1.7-halfsignal.7` uses a compact 28px avatar beside the sender name
+and administrator metadata on one header row. Message content spans the full
+width on the next row and starts at the avatar's left edge. Group work notices
+use that same outer edge. Existing typography and contextual actions remain.
+
+Validation: 655 tests, lint and generated-client check passed. Browser bounds
+confirm a 28px avatar, identical avatar/body x coordinates and a shared header y
+coordinate for each sender. Installed and checked the existing Desktop group.
