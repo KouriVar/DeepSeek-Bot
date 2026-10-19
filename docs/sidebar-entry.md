@@ -141,3 +141,27 @@ dark-theme group, browser bounds confirm 24px square circular avatars, a 12px
 header/body gap and 32px separation between members. Installed through the
 Desktop plugin CLI and visually checked the existing light-theme group's long
 reply, uploaded photo, tool metadata and work notice.
+
+## Upstream integration (2026-10-19)
+
+Version `0.1.7-halfsignal.9` merges upstream `dev` through `d6fc7cb` while
+retaining the Halfsignal surface. The upstream changes include member posts to
+their groups, posts appearing during running rounds, input preservation during
+part switches, serialized permission saves, thinking-level tools, style
+ownership, usage cursors and state-write retries. The standalone app also gains
+its upstream provider, import, packaging and update work; Harness Desktop still
+runs this fork as a plugin.
+
+Conflict resolution combines the upstream timer and run-stat additions with the
+existing voice action, native navigation and message presentation. The four
+native integration modules and the sidebar/theme customizations are unchanged
+from `005d7d4`; group headers retain 24px circular avatars and the agreed spacing.
+The generated client is rebuilt from source rather than resolving its bundled
+conflict by choosing either side. The pre-merge version is retained at commit `005d7d4` and on a backup branch.
+
+Validation: plugin tests passed (734 passed, 2 skipped), all 25 standalone-app
+tests passed, lint and the generated-client check passed, and the isolated
+mock-backed host smoke passed all 41 steps. Browser checks confirm Chat/Bot
+round-trip navigation, retained 24px round avatars and body alignment, a 12px
+header/body gap and correctly owned style tags. The tracked-source scan reports
+zero required fixes.
