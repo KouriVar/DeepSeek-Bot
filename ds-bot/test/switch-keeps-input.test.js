@@ -153,7 +153,7 @@ async function start({ fail = {}, services = {}, home: reuse } = {}) {
     method: 'POST', body: JSON.stringify({ endpoint, payload }),
   }))).json()
   const tool = (name, args, sessionId) => ctx.registeredTools.get(name).execute(args, { agent: agentOf(sessionId), name, callId: 'c1' })
-  const preStep = (sessionId, messages = [], step = 1) => ctx.listeners.get('agent/pre-step').at(-1)(
+  const preStep = (sessionId, messages = [], step = 1) => ctx.listeners.get('agent/pre-step').find(listener => /adoptCompaction/.test(String(listener)))(
     { agent: agentOf(sessionId), messages, step, signal: AbortSignal.timeout(60_000) }, async () => 'next')
   const state = () => JSON.parse(readFileSync(join(home, 'state.json'), 'utf8'))
   const stop = async ({ keep = false } = {}) => {

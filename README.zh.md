@@ -1,5 +1,7 @@
 <p align="center">
   <picture>
+此分支在 `ds-bot@0.1.7-halfsignal.13` 增量加入共享任务执行桥，配合 `dsh-task-board@0.4.0-alpha.1` 复用既有看板库进行 Team/DAG 调度、验收和恢复。保留原有身份、记忆及执行机制，不修改 UI，不新增第二套任务库。详见[审查与设计](docs/plans/2026-10-20-task-orchestrator.md)。
+
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.svg">
     <img src="docs/images/logo.svg" alt="DeepSeek Bot" width="260">
   </picture>

@@ -149,6 +149,7 @@ export function install(rt) {
       await rt.load()
       const sender = callerBot(exec)
       if (sender === undefined) return 'Only Bots on the team can use message_bot.'
+      rt.guardTaskDelegation?.(exec)
       const target = rt.findBot(args.to)
       if (target === undefined) return `No Bot named ${args.to}. Team: ${Object.values(state.bots).map(bot => bot.name).join(', ')}`
       if (target.id === sender.id) return 'You cannot message yourself.'
@@ -472,6 +473,7 @@ export function install(rt) {
       const self = rt.selfOf(exec.agent?.id)
       const sender = rt.botOf(self)
       if (sender === undefined) return 'Only Bots on the team can use post_to_group.'
+      rt.guardTaskDelegation?.(exec)
       const { room, error } = pickRoom(args.group, self)
       if (error) return error
       // An ordinary member's post calls only the members it names (openingSpeakers).

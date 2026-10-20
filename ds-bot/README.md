@@ -252,3 +252,13 @@ dev/check.sh                             # all checks (see below)
 ## License
 
 [Apache-2.0](LICENSE)
+
+## Optional shared task execution bridge
+
+`0.1.7-halfsignal.13` provides `botTaskRuntime` v1 for the companion task board.
+The board remains the only task database and scheduler. Existing Bot Sessions,
+models, permissions, memory, MCP and Skills execute admitted work. Ordinary
+private/group chat behavior and client files are unchanged. Automation requires
+explicit user configuration in the board; without it, no work is auto-dispatched.
+The bridge is verified on an isolated DSH 0.2.1-rc.2 host with a local mock model.
+It preserves per-Bot/group isolation, but does not create a clean Session per task.

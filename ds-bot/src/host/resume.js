@@ -32,6 +32,7 @@ const triggerOf = info => ({
   ...(info.audience ? { audience: info.audience } : {}),
   ...(info.askedBy ? { askedBy: info.askedBy } : {}),
   ...(info.senderRoomId ? { senderRoomId: info.senderRoomId } : {}),
+  ...(info.taskExecutionId ? { taskExecutionId: info.taskExecutionId } : {}),
 })
 
 const readNotes = (file) => {
@@ -167,6 +168,9 @@ export function install(rt) {
     : approval === undefined ? (({ approval: _, ...rest }) => rest)(record) : { ...record, approval }))
 
   async function resumeTurn(sessionId, record) {
+    // Structured tasks recover through the shared orchestrator; never replay a
+    // possibly destructive task just because an ordinary conversation resumes.
+    if (record.trigger?.taskExecutionId) return
     const bot = rt.botOf(record.botId)
     if (bot === undefined) return
     const text = resumeText(record)
@@ -199,7 +203,7 @@ export function install(rt) {
       if (rt.isBotSession(sessionId)) return sessionId
       return args.roomId === undefined ? rt.chatOf(args.toId) : rt.roomOf(args.roomId)?.sessions?.[args.toId]
     }
-    const fresh = list.filter(item => Date.now() - item.at < QUEUED_KEPT_MS && rt.botOf(item.args?.toId) !== undefined
+    const fresh = list.filter(item => !item.args?.taskExecutionId && Date.now() - item.at < QUEUED_KEPT_MS && rt.botOf(item.args?.toId) !== undefined
       && current(item.args) !== undefined && taken?.has(item.args.exchangeId) !== true)
     if (fresh.length === 0) return
     const target = current(fresh[0].args)

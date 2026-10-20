@@ -1,5 +1,7 @@
 <p align="center">
   <picture>
+This fork adds an optional shared task runtime bridge in `ds-bot@0.1.7-halfsignal.13`. With `dsh-task-board@0.4.0-alpha.1`, the existing board owns Team/DAG scheduling, review and recovery; Bot retains its identities, memory and execution. No UI changes or second task database. See the [audit and design](docs/plans/2026-10-20-task-orchestrator.md).
+
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.svg">
     <img src="docs/images/logo.svg" alt="DeepSeek Bot" width="260">
   </picture>
