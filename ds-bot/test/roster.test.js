@@ -776,3 +776,150 @@ test('avatar expressions persist, are copied, and reject arbitrary fields', asyn
   const invalid = (await call('update-bot', { id: bot.id, avatar: { shape: 'soft-square', face: '<script>' } })).value
   assert.deepEqual(invalid.avatar, { shape: 'soft-square' })
 })
+
+// #320: create_bot and update_bot take a photo from a local path or a data URL, and
+// store it in the same data URL the settings page writes.
+const PNG_BYTES = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(24, 1)])
+const PNG_DATA_URL = `data:image/png;base64,${PNG_BYTES.toString('base64')}`
+const tempAvatarDir = (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'ds-bot-avatar-'))
+  t.after(() => rmSync(dir, { recursive: true, force: true }))
+  return dir
+}
+
+test('create_bot and update_bot advertise an optional photo', async (t) => {
+  const { ctx, stop } = start(undefined, { models: ['deepseek-v4-flash'] })
+  t.after(stop)
+  for (const name of ['create_bot', 'update_bot']) {
+    const schema = ctx.registeredTools.get(name).parameters
+    assert.equal(schema.properties.avatar?.type, 'string')
+    assert.equal(schema.required?.includes('avatar') ?? false, false)
+    assert.match(schema.properties.avatar.description, /local image path.*data URL/)
+    assert.doesNotMatch(schema.properties.avatar.description, /http/)
+    assert.match(schema.properties.avatar.description, /256x256/)
+  }
+})
+
+test('create_bot stores a photo, and update_bot changes and clears it', async (t) => {
+  const { ctx, call, stop, sent } = start(undefined, { models: ['deepseek-v4-flash'] })
+  t.after(stop)
+  const chief = (await call('state', {})).value.mainBotId
+  const dir = tempAvatarDir(t)
+  const photo = join(dir, 'photo.png')
+  writeFileSync(photo, PNG_BYTES)
+  const exec = { agent: { id: chief } }
+  assert.match(await ctx.registeredTools.get('create_bot').execute({ name: 'Writer', role: 'Write', instructions: 'Write', avatar: photo }, exec), /^Created Writer/)
+  const writer = async () => (await call('state', {})).value.bots.find(bot => bot.name === 'Writer')
+  assert.equal((await writer()).avatar.image, PNG_DATA_URL)
+  const writerId = (await writer()).id
+  await until(() => sent.some(entry => entry.sessionId === writerId))
+
+  const tool = args => ctx.registeredTools.get('update_bot').execute({ bot: 'Writer', ...args }, exec)
+  // A mime that does not match the bytes is corrected, not stored as given.
+  assert.equal(await tool({ avatar: `data:image/jpeg;base64,${PNG_BYTES.toString('base64')}` }), 'Updated Writer.')
+  assert.equal((await writer()).avatar.image, PNG_DATA_URL)
+  // An empty string removes the photo, so the Bot shows its character again.
+  assert.equal(await tool({ avatar: '' }), 'Updated Writer.')
+  assert.equal((await writer()).avatar, undefined)
+  // The photo can be set again after it was cleared.
+  assert.equal(await tool({ avatar: PNG_DATA_URL }), 'Updated Writer.')
+  assert.equal((await writer()).avatar.image, PNG_DATA_URL)
+})
+
+test('a photo through update_bot keeps the Bot\'s other avatar fields', async (t) => {
+  const { ctx, call, stop, sent } = start(undefined, { models: ['deepseek-v4-flash'] })
+  t.after(stop)
+  const chief = (await call('state', {})).value.mainBotId
+  const exec = { agent: { id: chief } }
+  assert.match(await ctx.registeredTools.get('create_bot').execute({ name: 'Writer', role: 'Write', instructions: 'Write' }, exec), /^Created Writer/)
+  const writer = async () => (await call('state', {})).value.bots.find(bot => bot.name === 'Writer')
+  const writerId = (await writer()).id
+  await until(() => sent.some(entry => entry.sessionId === writerId))
+  await call('update-bot', { id: writerId, avatar: { shape: 'fox' } })
+  const tool = args => ctx.registeredTools.get('update_bot').execute({ bot: 'Writer', ...args }, exec)
+  // Setting a photo keeps the character; clearing the photo keeps it too.
+  assert.equal(await tool({ avatar: PNG_DATA_URL }), 'Updated Writer.')
+  assert.deepEqual((await writer()).avatar, { shape: 'fox', image: PNG_DATA_URL })
+  assert.equal(await tool({ avatar: '' }), 'Updated Writer.')
+  assert.deepEqual((await writer()).avatar, { shape: 'fox' })
+})
+
+test('a photo in the team\'s data is refused, and one in the team workspace there is read', async (t) => {
+  const { ctx, call, stop, home } = start(undefined, { models: ['deepseek-v4-flash'] })
+  t.after(stop)
+  const chief = (await call('state', {})).value.mainBotId
+  const exec = { agent: { id: chief } }
+  const tool = avatar => ctx.registeredTools.get('update_bot').execute({ avatar }, exec)
+  writeFileSync(join(home, 'photo.png'), PNG_BYTES)
+  assert.match(await tool(join(home, 'photo.png')), /is in DeepSeek Harness data, so it cannot be a Bot's photo/)
+  assert.equal((await call('state', {})).value.bots.find(bot => bot.id === chief).avatar?.image, undefined)
+  // The default team workspace lies in the team's data, and the Bots' own files are there.
+  const workspace = ctx.workspaceRegistry.get((await call('state', {})).value.workspaceId)?.path ?? join(home, 'workspace')
+  mkdirSync(workspace, { recursive: true })
+  writeFileSync(join(workspace, 'photo.png'), PNG_BYTES)
+  assert.match(await tool(join(workspace, 'photo.png')), /^Updated /)
+  assert.equal((await call('state', {})).value.bots.find(bot => bot.id === chief).avatar.image, PNG_DATA_URL)
+})
+
+test('a photo that cannot be read changes nothing, and a non-Main Bot cannot set another Bot\'s', async (t) => {
+  const { ctx, call, stop, sent } = start(undefined, { models: ['deepseek-v4-flash'] })
+  t.after(stop)
+  const chief = (await call('state', {})).value.mainBotId
+  const dir = tempAvatarDir(t)
+  const notes = join(dir, 'notes.png')
+  writeFileSync(notes, 'this is not an image')
+  const exec = { agent: { id: chief } }
+  assert.match(await ctx.registeredTools.get('create_bot').execute({ name: 'Phantom', role: 'Write', instructions: 'Write', avatar: notes }, exec), /^Could not create the Bot: The avatar must be a PNG, JPEG, WebP, or GIF image/)
+  assert.equal((await call('state', {})).value.bots.some(bot => bot.name === 'Phantom'), false)
+
+  const writer = (await call('create-bot', { name: 'Writer' })).value
+  await until(() => sent.some(entry => entry.sessionId === writer.id))
+  const mine = { agent: { id: writer.id } }
+  // Another Bot's photo is a Main Bot's to change, as its other settings are.
+  assert.match(await ctx.registeredTools.get('update_bot').execute({ bot: 'Chief', avatar: PNG_DATA_URL }, mine), /^Only a Main Bot can change another Bot/)
+  assert.equal((await call('state', {})).value.bots.find(bot => bot.id === chief).avatar?.image, undefined)
+  // Its own it may set; a later bad photo leaves the good one alone.
+  assert.equal(await ctx.registeredTools.get('update_bot').execute({ avatar: PNG_DATA_URL }, mine), 'Updated Writer.')
+  assert.equal((await call('state', {})).value.bots.find(bot => bot.id === writer.id).avatar.image, PNG_DATA_URL)
+  assert.match(await ctx.registeredTools.get('update_bot').execute({ avatar: notes }, mine), /^Could not update the Bot: The avatar must be a PNG/)
+  assert.equal((await call('state', {})).value.bots.find(bot => bot.id === writer.id).avatar.image, PNG_DATA_URL)
+})
+
+test('a group\'s relay limit is a user setting the state view shows, and old late-round fields load away', async (t) => {
+  const { call, stop, home } = start({
+    version: 1,
+    mainBotIds: ['chief'],
+    bots: { chief: { id: 'chief', name: 'Chief' }, writer: { id: 'writer', name: 'Writer' } },
+    rooms: {
+      r1: {
+        id: 'r1', name: 'Ops', members: ['chief', 'writer'], mode: 'admin', admin: 'chief', named: true,
+        log: [], seq: 0, seen: {}, lateRounds: 7, quietNoticed: true, quietShown: true,
+      },
+    },
+  })
+  t.after(stop)
+  const shown = (await call('state', {})).value.rooms.find(room => room.id === 'r1')
+  // The released late-round fields load away, and the live relay count never shows.
+  assert.equal('lateRounds' in shown, false)
+  assert.equal('quietNoticed' in shown, false)
+  assert.equal('quietShown' in shown, false)
+  assert.equal('relays' in shown, false)
+  assert.equal(shown.relayLimit, undefined)
+  assert.equal(shown.relayLimitDefault, 6, 'the default is three relays per member')
+  assert.equal('lateRounds' in JSON.parse(readFileSync(join(home, 'state.json'), 'utf8')).rooms.r1, false)
+
+  const set = await call('update-room', { id: 'r1', relayLimit: 4 })
+  assert.equal(set.ok, true)
+  assert.equal(set.value.room.relayLimit, 4)
+  assert.match(set.value.changes.join(' '), /Bots now pause after 4 relays/)
+  const cleared = await call('update-room', { id: 'r1', relayLimit: null })
+  assert.equal(cleared.ok, true)
+  assert.match(cleared.value.changes.join(' '), /Bots pause at the default relay count again/)
+  assert.equal((await call('state', {})).value.rooms.find(room => room.id === 'r1').relayLimit, undefined)
+
+  for (const bad of [0, 2.5, 201, 'six']) {
+    const result = await call('update-room', { id: 'r1', relayLimit: bad })
+    assert.equal(result.ok, false, JSON.stringify(bad))
+    assert.match(result.error.message, /Relay limit must be a whole number from 1 to 200/)
+  }
+})

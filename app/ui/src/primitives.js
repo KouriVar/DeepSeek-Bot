@@ -37,3 +37,6 @@ export function MarkdownText({ text, labels, variant }) {
   return h('div', { className: variant === 'compact' ? 'md_markdown md-compact' : 'md_markdown' },
     h(Markdown, { remarkPlugins: plugins, components }, text ?? ''))
 }
+
+// The standalone fallback has no Harness navigation; reuse its own icon vocabulary.
+export { PeopleIcon as IconAgentPresetOutlineRegular, PlusIcon as IconNewChatOutlineRegular, SearchIcon as IconSearchOutlineRegular } from '../../../ds-bot/src/client/icons.js'

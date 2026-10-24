@@ -4,7 +4,7 @@
 // Usage: node scripts/check-packed.mjs [app executable] [screenshot.png]
 // The executable defaults to the one that `npm run pack` or `npm run dist` writes into dist-pack/.
 import { spawn, spawnSync } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
@@ -17,6 +17,8 @@ const executable = given || packedExecutable()
 function packedExecutable() {
   const out = join(root, 'dist-pack')
   if (process.platform === 'win32') return join(out, 'win-unpacked', 'DeepSeek Bot.exe')
+  // executableName in electron-builder.yml.
+  if (process.platform === 'linux') return join(out, 'linux-unpacked', 'deepseek-bot')
   const dir = ['mac-arm64', 'mac'].find(name => existsSync(join(out, name))) ?? 'mac'
   return join(out, dir, 'DeepSeek Bot.app', 'Contents', 'MacOS', 'DeepSeek Bot')
 }
@@ -26,7 +28,7 @@ if (!existsSync(executable)) {
   process.exit(2)
 }
 
-const work = mkdtempSync(join(tmpdir(), 'ds-bot-packed-'))
+const work = realpathSync.native(mkdtempSync(join(realpathSync.native(tmpdir()), 'ds-bot-packed-')))
 mkdirSync(join(work, 'home'))
 const children = []
 
@@ -79,7 +81,7 @@ async function appPage(port, deadline) {
   while (Date.now() < deadline) {
     try {
       const targets = await (await fetch(`http://127.0.0.1:${String(port)}/json/list`)).json()
-      const page = targets.find(target => target.type === 'page' && target.url.startsWith('dsh-app://app'))
+      const page = targets.find(target => target.type === 'page' && /^http:\/\/127\.0\.0\.1:\d+\//u.test(target.url))
       if (page) return page
     } catch {
       // The debugging port is not listening yet.
@@ -121,6 +123,16 @@ function devtools(url, problems) {
   return { opened, call }
 }
 
+// mica.css styles DSH's own page, which can change with a DSH upgrade; every rule must still
+// find an element, on every platform, so the change shows here and not as a broken window.
+function micaRules() {
+  const css = readFileSync(join(root, 'src', 'mica.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//gu, '')
+  return [...css.matchAll(/([^{}]+)\{/gu)].map(([, selectors]) => selectors.split(',')
+    .map(selector => selector.trim().replace(/::(?:before|after)$/u, ''))
+    .filter(selector => selector !== '' && selector !== 'body'))
+    .filter(rule => rule.length > 0)
+}
+
 async function chat(cdp) {
   const evaluate = async expression => (await cdp.call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true })).result.value
   const until = async (expression, label, ms = 120_000) => {
@@ -137,6 +149,8 @@ async function chat(cdp) {
   await cdp.call('Runtime.enable')
   await cdp.call('Log.enable')
   await until("document.querySelector('.bt-tile, .bt-row')", 'the team')
+  const stale = await evaluate(`${JSON.stringify(micaRules())}.filter(rule => !rule.some(selector => document.querySelector(selector) !== null)).map(rule => rule.join(', '))`)
+  if (stale.length > 0) throw new Error(`src/mica.css no longer matches DSH's page: ${stale.join(' | ')}`)
   await dismissNotice()
   const main = await evaluate("fetch('api/bot', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ endpoint: 'state', payload: {} }) }).then(r => r.json()).then(r => r.value.mainBotId)")
   await evaluate(`document.querySelector(${JSON.stringify(`[data-bot-id="${main}"]`)}).click()`)
@@ -145,11 +159,65 @@ async function chat(cdp) {
   // The mock model's greeting for a new team.
   await until(text('先让团队帮你做哪块'), 'the greeting')
   await dismissNotice()
-  await evaluate("[...document.querySelectorAll('[role=textbox][contenteditable=true], textarea')].at(-1).focus()")
+  // Click the composer through the input pipeline. A bare focus() is not enough where no window
+  // manager gives the window focus (xvfb in CI): the text and the Enter would go nowhere.
+  const box = "[...document.querySelectorAll('[role=textbox][contenteditable=true], textarea')].at(-1)"
+  const focusCheck = "(document.activeElement?.isContentEditable ?? false) || document.activeElement?.tagName === 'TEXTAREA'"
+  // A greeting that just arrived leaves the composer rebinding: for a moment the field is
+  // not editable, so a click lands on it but does not focus it. The probe and the click are
+  // separate round trips, so keep probing and click only where the field itself is on top
+  // until the field holds focus.
+  const probe = `(() => {
+    const el = ${box}
+    if (el === undefined) return null
+    const rect = el.getBoundingClientRect()
+    for (const part of [0.5, 0.25, 0.75, 0.1, 0.9]) {
+      const point = { x: rect.x + rect.width * part, y: rect.y + rect.height / 2 }
+      const hit = document.elementFromPoint(point.x, point.y)
+      if (hit === el || (hit !== null && el.contains(hit))) return { x: point.x, y: point.y }
+    }
+    return null
+  })()`
+  let shot = null
+  const deadline = Date.now() + 30_000
+  while (Date.now() < deadline && !(await evaluate(`Boolean(${focusCheck})`))) {
+    const point = await evaluate(probe)
+    if (point !== null && point !== undefined) {
+      shot = point
+      await cdp.call('Input.dispatchMouseEvent', { type: 'mousePressed', x: point.x, y: point.y, button: 'left', clickCount: 1 })
+      await cdp.call('Input.dispatchMouseEvent', { type: 'mouseReleased', x: point.x, y: point.y, button: 'left', clickCount: 1 })
+      await sleep(300)
+    } else await sleep(250)
+  }
+  if (!(await evaluate(`Boolean(${focusCheck})`))) {
+    // Say what was under the cursor, what held the focus and how large the window was.
+    const state = await evaluate(`(() => {
+      const el = ${box}
+      const rect = el === undefined ? null : el.getBoundingClientRect().toJSON()
+      const point = rect === null ? null : { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 }
+      const hit = point === null ? null : document.elementFromPoint(point.x, point.y)
+      const cover = hit?.closest?.('[role=dialog],[aria-modal=true],[data-slot]')
+      const brief = node => (node === null || node === undefined ? null : { tag: node.tagName ?? null, class: String(node.getAttribute?.('class') ?? '').slice(0, 160) })
+      return JSON.stringify({
+        inner: [innerWidth, innerHeight], outer: [outerWidth, outerHeight], screen: [screen.width, screen.height], dpr: devicePixelRatio, focused: document.hasFocus(),
+        click: ${JSON.stringify(shot)}, probe: point, box: rect,
+        hit: brief(hit),
+        cover: cover === null || cover === undefined ? null : { tag: cover.tagName, slot: cover.getAttribute('data-slot'), role: cover.getAttribute('role'), modal: cover.getAttribute('aria-modal') },
+        active: brief(document.activeElement),
+      })
+    })()`)
+    throw new Error(`timed out waiting for the focused composer; page state: ${state}`)
+  }
   await cdp.call('Input.insertText', { text: 'packaged app check' })
+  await until(text('packaged app check'), 'the typed message', 10_000)
   for (const type of ['keyDown', 'keyUp']) await cdp.call('Input.dispatchKeyEvent', { type, key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 })
   // The mock model starts its reply with 收到： and the message.
-  await until(text('收到：packaged app check'), 'the reply')
+  try {
+    await until(text('收到：packaged app check'), 'the reply')
+  } catch (error) {
+    const state = await evaluate("JSON.stringify({ active: document.activeElement?.tagName ?? null, editable: document.activeElement?.isContentEditable ?? null, tail: document.body.innerText.slice(-300) })")
+    throw new Error(`${error.message}; page state: ${state}`)
+  }
   await sleep(1000)
   console.log(`check-packed: chat ${JSON.stringify(await evaluate('document.body.innerText.slice(-200)'))}`)
 }

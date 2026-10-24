@@ -1,7 +1,7 @@
 import { createElement as h, Fragment, useEffect, useRef, useState } from 'react'
 import { isMainOf } from './sources.js'
 import { HEADER, currentPart, runStatsOf, stripHeader, usageOf } from './text.js'
-import { PlusIcon, ShareIcon, CloseIcon, ChevronLeftIcon, GearIcon, WaveIcon } from './icons.js'
+import { PlusIcon, ShareIcon, CloseIcon, ChevronLeftIcon, GearIcon, WaveIcon, TerminalIcon } from './icons.js'
 import { botState, BotMark, BotAvatar } from './mark.js'
 import { GlobeIcon, Favicon } from './browser-pane.js'
 import { useEscape } from './overlay-hooks.js'
@@ -66,14 +66,14 @@ function RunStats({ bot, part, running, actions }) {
       h('span', { title: entry.title }, entry.text))))
 }
 
-// The Bot's browser inside the details page: its tabs as small window cards on
-// Desktop, a pointer there on web.
+// The Bot's browser inside the details page: its tabs as small window cards in the
+// desktop apps, a pointer there on web.
 function BrowserCards({ bot, sessionId, roster, actions, useBrowserTabs, useBrowserPages }) {
   const state = useBrowserTabs(map => map[bot.id] ?? EMPTY_TABS)
   const pages = useBrowserPages(map => map)
   useEffect(() => { actions.browserEnsure?.(bot.id) }, [bot.id])
   if (roster.browser !== true || !actions.browserShow) {
-    return h('div', { className: 'bt-muted' }, t('The browser is in the DSH Desktop app.'))
+    return h('div', { className: 'bt-muted' }, t('The browser is in DSH Desktop and the DeepSeek Bot app.'))
   }
   if (state.ids.length === 0) {
     return h('div', { className: 'bt-browser-empty-mark' },
@@ -147,8 +147,8 @@ function MemberRow({ member, entry, room, roster, actions }) {
     h(MemberApprovals, { entry, bot: member, actions }))
 }
 
-// A group's overview: what members read, who is in it, and who answers. Changes are
-// made in its settings.
+// A group's overview: what members read, who is in it, who answers, and what it
+// remembers. Changes are made in its settings.
 function GroupOverview({ room, roster, actions, usage, useWork, openSettings }) {
   const members = room.members.map(id => roster.byId[id]).filter(Boolean)
   const { entries } = useMemberWork(room, useWork)
@@ -165,6 +165,7 @@ function GroupOverview({ room, roster, actions, usage, useWork, openSettings }) 
       h('div', { className: 'bt-kv' }, h('span', null, t(ROOM_MODES.find(([id]) => id === shownMode(room, roster))?.[1] ?? 'Everyone')))),
     room.permission ? h('div', { key: 'permission' }, h('div', { className: 'bt-section-title' }, t('Permissions')),
       h('div', { className: 'bt-kv' }, h('span', { className: presetDanger(room.permission) ? 'bt-perm-danger' : undefined }, presetName(room.permission, roster.permissions)))) : null,
+    roster.memory === false ? null : h(MemoryRow, { key: 'memory', owner: { id: room.id, name: room.name, group: true }, actions }),
     usage ? h('div', { key: 'usage' }, h('div', { className: 'bt-section-title' }, t('Usage')),
       h('div', { className: 'bt-kv' }, h('span', null, room.name), h('span', null, usage))) : null,
   ]
@@ -223,6 +224,9 @@ export function DetailsDrawer({ sessionId, startRenaming, startTab, hasStrip, ro
       ? h('button', { type: 'button', className: 'bt-round', 'aria-label': t('Open browser'), title: t("Open this Bot's browser"), onClick: () => actions.openBrowser(sessionId) }, h(GlobeIcon))
       : null,
     bot ? h('button', { type: 'button', className: 'bt-round', 'aria-label': t('Start voice chat'), title: t('Voice chat'), onClick: () => actions.openVoice(sessionId) }, h(WaveIcon)) : null,
+    (bot || room) && actions.canOpenTerminal?.()
+      ? h('button', { type: 'button', className: 'bt-round', 'data-info-row': 'terminal', 'aria-label': t('New terminal'), title: t('New terminal'), onClick: () => actions.newTerminal() }, h(TerminalIcon))
+      : null,
     bot || room ? h('button', { type: 'button', className: 'bt-round', 'aria-label': copied ? t('Copied conversation') : t('Share conversation'), title: copied ? t('Copied') : t('Copy conversation as Markdown'), onClick: share }, copied ? h('span', { key: 'copied', className: 'bt-pop-in' }, '✓') : h(ShareIcon)) : null,
     hasStrip ? null : h('button', { type: 'button', className: 'bt-round', 'aria-label': t('Close details'), onClick: close }, h(CloseIcon)))
   if (!bot && !room) {
@@ -273,7 +277,7 @@ export function DetailsDrawer({ sessionId, startRenaming, startTab, hasStrip, ro
         bot.instructions
           ? h(About, { key: 'about', text: bot.instructions })
           : h('button', { key: 'about', type: 'button', className: 'bt-more', onClick: () => setView('settings') }, t('Add instructions in Bot settings')),
-        roster.memory === false ? null : h(MemoryRow, { key: 'memory', bot, actions }),
+        roster.memory === false ? null : h(MemoryRow, { key: 'memory', owner: { id: bot.id, name: bot.name }, actions }),
         usage ? h('div', { key: 'usage' }, h('div', { className: 'bt-section-title' }, t('Usage')),
           h('div', { className: 'bt-kv' }, h('span', null, bot.name), h('span', null, usage))) : null,
         h(ScheduleSummary, { key: 'routines', bot, actions }),

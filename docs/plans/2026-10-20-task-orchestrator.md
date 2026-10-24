@@ -1,5 +1,7 @@
 # Unified task orchestration (incremental upgrade)
 
+> Historical v13 design. Retired in v0.2.1-halfsignal.14 at the user’s request; the Bot plugin no longer publishes the board bridge. The companion repository and stored tasks are untouched.
+
 ## Source audit
 
 The Bot host's module wiring, state migrations, delivery, turns, handoff tree,

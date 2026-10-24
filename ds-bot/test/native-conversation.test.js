@@ -17,7 +17,7 @@ runInNewContext(built.outputFiles[0].text, {
     createElement: (type, props) => ({ type, props }), useEffect: effect => effects.push(effect),
   } : {},
 })
-const { coordinationCss, BotToolView, NativeTurnProcess, installTurnProcess } = module.exports
+const { coordinationCss, BotToolView, BOT_TOOL_NAMES, NativeTurnProcess, installTurnProcess } = module.exports
 
 test('native views hide only recorded coordination turns, using turn values rather than array indices', () => {
   const css = coordinationCss({ roomsById: {}, exchangeTurns: { bot: [7, 19, 'bad', -1] } }, 'bot')
@@ -77,4 +77,11 @@ test('the process bridge restores the original renderer when Bot mode exits', ()
   stop()
   assert.deepEqual(entries, [original])
   assert.equal(listeners.size, 0)
+})
+
+// Widgets must use the Bot renderer even though the native tool tree stays mounted.
+test('show_view uses the Bot tool view alongside the existing group tools', () => {
+  assert.ok(BOT_TOOL_NAMES.includes('show_view'))
+  const block = { kind: 'tool-result', name: 'show_view', callId: 'widget', content: [] }
+  assert.equal(BotToolView({ block, sessionId: 'bot' }).props.node.data.root, block)
 })

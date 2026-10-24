@@ -3,7 +3,7 @@ import { isHex, inkText, paintCss } from './inks.js'
 import { DEFAULT_MASK, SHAPES, markupCache, maskOf } from './characters.js'
 import { createSource, EMPTY_ROSTER, indexRoster, isAgentSession } from './sources.js'
 import { teamActions } from './team-actions.js'
-import { themeCss, nativeAccentCss, shellTokens, registry, registerShape, registerTheme, allThemes } from './themes.js'
+import { themeCss, nativeAccentCss, shellTokens, registry, registerShape, registerTheme, allThemes, layoutOf, widthOf, flatWidthOf } from './themes.js'
 import { MENTION_ORIGIN, currentPart } from './text.js'
 import { COMPANION_CSS, COMPANION_CHAT_CSS } from './companion-theme.js'
 import { SHELL_CSS, CONVERSATION_CSS, installStyles, installCompiledStyles } from './styles.js'
@@ -12,9 +12,11 @@ import { TeamSidebar, SIDEBAR_CSS, holdShellShortcuts, openHarnessOnboarding, op
 import { NativeBotDetails, BotToolView, BOT_TOOL_NAMES, installTurnProcess } from './native-conversation.js'
 import { ComposerVoice, menuIcons } from './composer.js'
 import { CHATS_SOURCE, atSources } from './at-menu.js'
+import { BtwDock, BtwTurnTail, btwSource } from './btw.js'
 import { VOICE_BUNDLE } from './speech.js'
 import { sameVersion } from './dsh-offer.js'
-import { AnsweredCell, QuestionCard, QuestionDock } from './questions.js'
+import { QuestionCard, QuestionDock } from './questions.js'
+import { AnsweredReply, WidgetDock, WIDGET_CSS } from './widget-cell.js'
 import { TriggerCell, Nothing } from './cells.js'
 import { Overlays } from './overlays.js'
 import { createBotBrowsers, serveBrowserReads } from './bot-browsers.js'
@@ -31,6 +33,7 @@ import { noteLeft, setUnread, sharedMap, toggleReaction } from './shared-map.js'
 import { freePriority, groupsFor, readMode, surfaceGroups, writeMode } from './surface.js'
 import { installLocale, language, t } from './i18n.js'
 import { noteClientError, quietly } from './diagnostics.js'
+import { RIGHTBAR_ATTRIBUTES, columnOpened, createSwitchWindow, drawerOpened, rightColumnOpen } from './right-panel.js'
 import { ErrorToast, FEEDBACK_CSS } from './feedback.js'
 import { ABOUT_CSS } from './about.js'
 import { MEMBER_CSS, MemberDock } from './member-status.js'
@@ -40,6 +43,7 @@ import { BotEntry, BotPanelIcon, ChatPanelIcon } from './bot-entry.js'
 import { installNativeAccount } from './native-account.js'
 import { installNativeNewSession } from './native-sidebar.js'
 import { NATIVE_TOKENS, NATIVE_SHELL_CSS, NATIVE_CONVERSATION_CSS } from './native-theme.js'
+import { listedOpener } from './open-listed.js'
 
 export const inject = ['sessions', 'uiWorkspace', 'uiConversation', 'slots', 'theme', 'layout']
 
@@ -110,6 +114,9 @@ export function apply(ctx) {
   // Per Session, the ask_user and request_secret calls its transcript draws; the
   // docks carry the cards of the other calls.
   const cards = createSource({})
+  // Edited dock cards keep their component when history arrives. This source
+  // holds only request identities and counts, never drafts or secret values.
+  const heldCards = createSource({})
   // Per Session, the first visible time and the end time of each turn the transcript
   // has rendered; time separators compare one turn's end with the next turn's start.
   const turnClock = createSource({})
@@ -153,6 +160,7 @@ export function apply(ctx) {
     const live = {}
     if (value.connectors !== undefined && JSON.stringify(value.connectors) !== JSON.stringify(current.connectors ?? [])) live.connectors = value.connectors
     if (value.capabilityStatuses !== undefined && JSON.stringify(value.capabilityStatuses) !== JSON.stringify(current.capabilityStatuses ?? {})) live.capabilityStatuses = value.capabilityStatuses
+    if (value.btwCards !== undefined && JSON.stringify(value.btwCards) !== JSON.stringify(current.btwCards ?? {})) live.btwCards = value.btwCards
     if (Object.keys(live).length > 0 && current.ready) roster.set({ ...current, ...live })
     if (value.unchanged || (value.revision === current.revision && value.modelsKey === current.modelsKey)) return
     // On a browser with no visit record yet, everything already there counts as seen.
@@ -225,9 +233,9 @@ export function apply(ctx) {
     }, 'ds-bot: app update status')
   }
 
-  // Bot browsers need the Desktop shell's webview bridge, and the host serves
-  // read_browser only in the Desktop profile (`browser` in the state).
-  const bridge = window.dshDesktop?.protocolVersion === 1 ? window.dshDesktop.browser ?? null : null
+  // Bot browsers need a webview bridge: DSH Desktop's, or the desktop app's of the
+  // same shape. The host serves read_browser only in those two (`browser` in the state).
+  const bridge = (window.dshDesktop?.protocolVersion === 1 ? window.dshDesktop.browser : globalThis.dsBotApp?.browser) ?? null
   const browsers = bridge ? createBotBrowsers({ bridge, createSource }) : null
   if (browsers) {
     ctx.effect(() => {
@@ -292,8 +300,14 @@ export function apply(ctx) {
       const id = themes[prefs.theme] ? prefs.theme : 'deepseek'
       const accent = isHex(prefs.accent) ? prefs.accent : undefined
       const motion = prefs.motion === 'quiet' || prefs.motion === 'lively' ? prefs.motion : 'normal'
+      const layout = layoutOf(prefs)
+      const width = widthOf(prefs)
+      const flatWidth = flatWidthOf(prefs)
       document.body.dataset.btMotion = motion
-      const next = `${id}|${accent ?? ''}|${motion}|${registry.getSnapshot()}`
+      document.body.dataset.btLayout = layout
+      document.body.style.setProperty('--bt-msg-w', String(width / 100))
+      document.body.style.setProperty('--bt-flat-w', String(flatWidth / 100))
+      const next = `${id}|${accent ?? ''}|${motion}|${layout}|${width}|${flatWidth}|${registry.getSnapshot()}`
       if (next === key) return
       key = next
       style.textContent = id === 'deepseek' ? NATIVE_TOKENS + nativeAccentCss(accent) : themeCss(themes[id], accent)
@@ -301,7 +315,7 @@ export function apply(ctx) {
       releaseTokens = id === 'deepseek' ? null : ctx.theme.overrideTokens('ds-bot', shellTokens(themes[id]))
       if (typeof release === 'function') release()
       if (snapshot.ready) {
-        try { localStorage.setItem(PREFS_KEY, JSON.stringify({ theme: prefs.theme, accent: prefs.accent, motion: prefs.motion })) } catch { /* storage unavailable */ }
+        try { localStorage.setItem(PREFS_KEY, JSON.stringify({ theme: prefs.theme, accent: prefs.accent, motion: prefs.motion, layout: prefs.layout, width: prefs.width, flatWidth: prefs.flatWidth, thinking: prefs.thinking })) } catch { /* storage unavailable */ }
       }
     }
     render()
@@ -314,6 +328,9 @@ export function apply(ctx) {
         if (typeof releaseTokens === 'function') releaseTokens()
       } finally {
         delete document.body.dataset.btMotion
+        delete document.body.dataset.btLayout
+        document.body.style.removeProperty('--bt-msg-w')
+        document.body.style.removeProperty('--bt-flat-w')
         style.remove()
       }
     }
@@ -345,8 +362,10 @@ export function apply(ctx) {
     for (const [id, owner] of pendingAdopt) if (owner === agentId && !ids.includes(id)) ids.push(id)
     return ids
   }
+  const mainView = () => Object.values(ctx.sessions.list.getSnapshot().byId ?? {}).find(session => (session?.retainedBy?.mainView ?? 0) > 0)?.id
+  const show = listedOpener({ list: ctx.sessions.list, refresh: () => Promise.resolve(ctx.sessions.refresh?.()).catch(quietly('refresh sessions')), open: (target) => { expected = target; ctx.uiWorkspace.openSession(target) }, current: mainView })
   const actions = {
-    ...teamActions({ call, after, partFor, roster, ui, live, cards, turnClock }),
+    ...teamActions({ call, after, partFor, roster, ui, live, cards, heldCards, turnClock }),
     // The full-pane overlays sit above the conversation, so opening one must dismiss them
     // or the click appears to do nothing.
     isAgentSession: id => isAgentSessionId(id),
@@ -356,16 +375,14 @@ export function apply(ctx) {
       ui.set(state => (state.newChat || state.exchange || state.menu || state.palette ? { ...state, newChat: null, exchange: null, menu: null, palette: null } : state))
       setPlain(false)
       const target = partFor(id)
-      expected = target
-      ctx.uiWorkspace.openSession(target)
+      show(target)
     },
     // The conversation replacements withdraw for a plain Session; set the surface
     // before the navigation so the Bot skin never flashes.
     openAgentSession: (sessionId) => {
       ui.set(state => ({ ...state, newChat: null, exchange: null, menu: null, palette: null, details: null, view: 'details', renaming: false, tab: null }))
       setPlain(true)
-      expected = sessionId
-      ctx.uiWorkspace.openSession(sessionId)
+      show(sessionId)
     },
     addAgent: async () => {
       const agent = await after(call('add-agent'))
@@ -423,8 +440,7 @@ export function apply(ctx) {
       const bot = last ? roster.getSnapshot().byId[last.botId] : undefined
       setPlain(false)
       const target = bot && currentPart(bot) !== last.sessionId ? currentPart(bot) : partFor(id)
-      expected = target
-      ctx.uiWorkspace.openSession(target)
+      show(target)
     },
     selectPanel: (id) => { ctx.layout.selectPanel(id) },
     toggleSidebar: () => { ctx.layout.toggleSidebar() },
@@ -480,15 +496,6 @@ export function apply(ctx) {
       ui.set(state => ({ ...state, reactions }))
     },
     clearUnread: id => writeUnread(id, false),
-    // DSH's right sidebar (files, terminals), which a plugin may load after this one.
-    hasRightSidebar: () => ctx.get('sidebarRight') !== undefined,
-    toggleRightSidebar: () => {
-      try {
-        ctx.get('sidebarRight')?.toggleExpanded()
-      } catch (error) {
-        actions.reportError(error, 'right-sidebar')
-      }
-    },
   }
   // Without the Desktop bridge these stay undefined, and no browser control renders.
   if (browsers) {
@@ -524,6 +531,15 @@ export function apply(ctx) {
       browserNavigate: (tabId, input) => browsers.navigate(tabId, input),
       browserCommand: (tabId, name) => browsers.command(tabId, name),
       browserFocus: (tabId) => browsers.focus(tabId),
+      // Cookie imports, only where the bridge offers them (the desktop app): a file or an
+      // installed browser's profile is previewed, then applied into the Bot's storage key.
+      browserImport: typeof bridge.importSources === 'function' ? {
+        sources: () => bridge.importSources(),
+        pick: () => bridge.importPick(),
+        live: (source, close) => bridge.importLive(source, close),
+        apply: (botId, pending) => bridge.importApply(`bot:${botId}`, pending),
+        cancel: (pending) => bridge.importCancel(pending),
+      } : null,
     })
   }
   // Whether AccountLauncher holds the shell's settings seat; FooterAccount steps aside if so.
@@ -568,13 +584,93 @@ export function apply(ctx) {
   }
   const browserPages = browsers?.pages ?? createSource({})
   const browserTabs = browsers?.tabs ?? createSource({})
-  const face = () => ({ actions, hooks: { roster, ui, activity, work, memoryNews, registry, turnClock, live, cards, browserPages, browserTabs, surface, update } })
+  const face = () => ({ actions, hooks: { roster, ui, activity, work, memoryNews, registry, turnClock, live, cards, heldCards, browserPages, browserTabs, surface, update } })
   ctx.effect(() => noticeApprovals({
     work,
     roster,
     shownSession: () => Object.values(ctx.sessions.list.getSnapshot().byId ?? {}).find(session => (session?.retainedBy?.mainView ?? 0) > 0)?.id,
     openSession: id => actions.openSession(id),
   }), 'ds-bot: approval notifications')
+
+  actions.cancelBtw = card => call('btw-cancel', { sessionId: card.partId, id: card.id })
+  // The dock lives outside the chat snapshot, so it subscribes for the turn that
+  // owns a card. Until that turn closes, the card stays by the composer.
+  actions.turnFacts = (sessionId) => {
+    try {
+      const binding = ctx.sessions.binding(sessionId)
+      if (binding === undefined) return { turns: undefined, openTurn: undefined }
+      const conversation = ctx.uiConversation.binding(binding)
+      const chat = conversation.target('chat').getSnapshot()
+      return { turns: chat?.timeline?.turns, openTurn: conversation.openTurn.getSnapshot() }
+    } catch {
+      return { turns: undefined, openTurn: undefined }
+    }
+  }
+  actions.watchTurns = (sessionId, listener) => {
+    try {
+      const binding = ctx.sessions.binding(sessionId)
+      if (binding === undefined) return () => {}
+      const conversation = ctx.uiConversation.binding(binding)
+      const offChat = conversation.target('chat').subscribe(listener)
+      const offOpen = conversation.openTurn.subscribe(listener)
+      return () => { offChat(); offOpen() }
+    } catch {
+      return () => {}
+    }
+  }
+  // A terminal tab in DSH's right column, only where the terminal plugin
+  // registered its type and the column face is there.
+  actions.canOpenTerminal = () => ctx.get('sidebarRight') !== undefined && ctx.get('sidebarRightTabs')?.get('terminal') !== undefined
+  actions.newTerminal = () => {
+    // The column takes the drawer's space: hand it over first.
+    actions.closePanel()
+    try {
+      ctx.get('sidebarRight')?.openTab('terminal')
+    } catch (error) {
+      actions.reportError(error, 'right-sidebar')
+    }
+  }
+
+  // The drawer and DSH's right column never share the window: whichever the
+  // user asked for last wins. The column's state is read off the frame's
+  // attributes through a MutationObserver. `mounted` moves before the DOM of a
+  // Session switch does, so a switch opens a timed window (createSwitchWindow):
+  // an attribute batch inside it is the switch revealing that Session's own
+  // column — the drawer wins and folds it back — while one outside it is the
+  // user's own opening and takes the space.
+  ctx.effect(() => {
+    const sidebar = ctx.get('sidebarRight')
+    if (!sidebar) return undefined
+    let open = rightColumnOpen(document)
+    // Long enough for a fullscreen panel's slide, which reports only once it ends.
+    const switchWindow = createSwitchWindow(done => setTimeout(done, 400))
+    const collapseColumn = () => {
+      try {
+        if (sidebar.isExpanded()) sidebar.toggleExpanded()
+      } catch (error) {
+        actions.reportError(error, 'right-sidebar')
+      }
+    }
+    const observer = new MutationObserver(() => {
+      const next = rightColumnOpen(document)
+      const opening = next && !open
+      open = next
+      const verdict = opening ? columnOpened(ui.getSnapshot().details !== null, switchWindow.pending) : null
+      if (verdict === 'close-drawer') actions.closePanel()
+      else if (verdict === 'collapse-column') collapseColumn()
+    })
+    observer.observe(document.documentElement, {
+      subtree: true, attributes: true, attributeFilter: RIGHTBAR_ATTRIBUTES,
+    })
+    const offMounted = sidebar.mounted.subscribe(() => switchWindow.moved())
+    let drawer = ui.getSnapshot().details !== null
+    const offUi = ui.subscribe(() => {
+      const next = ui.getSnapshot().details !== null
+      if (next && !drawer && drawerOpened(rightColumnOpen(document)) === 'collapse-column') collapseColumn()
+      drawer = next
+    })
+    return () => { observer.disconnect(); offMounted(); offUi() }
+  }, 'ds-bot: one right panel')
 
   // A Bot surface owns the cells it shadows. It starts far below the -10 that plugins
   // commonly use and goes below whatever already holds the cell, so a plugin that
@@ -596,7 +692,10 @@ export function apply(ctx) {
           return binding === undefined ? undefined : triggers.sessionOf(binding.ctx)
         }
         const launched = sessionId => controllerOf(sessionId)?.launcher.getSnapshot() === CHATS_SOURCE
-        const offs = atSources({ roster, sessions: ctx.sessions, launched, iconFor: menuIcons(roster) }).map(source => triggers.registerSource(source))
+        const offs = [
+          ...atSources({ roster, sessions: ctx.sessions, launched, iconFor: menuIcons(roster) }).map(source => triggers.registerSource(source)),
+          triggers.registerSource(btwSource({ roster })),
+        ]
         atMenu = { controllerOf }
         return () => {
           atMenu = null
@@ -627,6 +726,7 @@ export function apply(ctx) {
     () => installCompiledStyles(ABOUT_CSS, 'about'),
     () => installCompiledStyles(MEMBER_CSS, 'members'),
     () => installCompiledStyles(USER_MESSAGE_CSS, 'user-messages'),
+    () => installCompiledStyles(WIDGET_CSS, 'widgets'),
     browsers ? () => installCompiledStyles(BROWSER_CSS, 'browser') : null,
     () => installTheme(),
     () => shadow('sidebar.workspaces', { priority: BOT_PRIORITY, inject: () => ({ ...face(), nativeHeader: true }) }, TeamSidebar),
@@ -644,11 +744,13 @@ export function apply(ctx) {
     () => shadow('conversation.chat.node', { key: 'turn-trigger', priority: BOT_PRIORITY, locale: 'chat', inject: face }, TriggerCell),
     () => installTurnProcess(ctx, face),
     ...BOT_TOOL_NAMES.map(key => () => shadow('tool.call.toolview', { key, priority: BOT_PRIORITY, inject: face }, BotToolView)),
+    () => shadow('conversation.chat.turnTail', { id: 'bot-btw', order: 800, priority: BOT_PRIORITY, inject: face }, BtwTurnTail),
     // A Bot condenses its conversation without telling anyone; the chat keeps showing
     // every message.
-    () => shadow('conversation.chat.node', { key: 'question-reply', priority: BOT_PRIORITY, locale: 'chat' }, AnsweredCell),
+    () => shadow('conversation.chat.node', { key: 'question-reply', priority: BOT_PRIORITY, locale: 'chat' }, AnsweredReply),
     () => shadow('conversation.chat.node', { key: 'compaction', priority: BOT_PRIORITY, locale: 'chat' }, Nothing),
     () => shadow('conversation.input.left', { id: 'bot-quote', order: -100, inject: () => ({ ...face(), native: true }) }, ComposerVoice),
+    () => shadow('conversation.composer.dock', { id: 'btw', order: 2, priority: BOT_PRIORITY, inject: face }, BtwDock),
     () => shadow('conversation.composer', {
       priority: BOT_PRIORITY,
       select: owner => (owner.pendingInteraction?.kind === 'question' ? owner.pendingInteraction : null),
@@ -656,6 +758,7 @@ export function apply(ctx) {
     () => shadow('conversation.input.dock', { id: 'bot-members', order: -120, inject: face }, MemberDock),
     () => shadow('conversation.input.dock', { id: 'bot-model', order: -110, inject: face }, ModelChoiceDock),
     () => shadow('conversation.input.dock', { id: 'bot-question', order: -100, inject: face }, QuestionDock),
+    () => shadow('conversation.input.dock', { id: 'bot-view', order: -95, inject: face }, WidgetDock),
     () => shadow('conversation.input.dock', { id: 'bot-secret', order: -90, inject: face }, SecretDock),
   ]
   // Keep the entry outside both surface groups so Agent mode can return to Bots.

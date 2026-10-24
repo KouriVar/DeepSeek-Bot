@@ -168,7 +168,7 @@ export function install(rt) {
     : approval === undefined ? (({ approval: _, ...rest }) => rest)(record) : { ...record, approval }))
 
   async function resumeTurn(sessionId, record) {
-    // Structured tasks recover through the shared orchestrator; never replay a
+    // Legacy structured tasks have no scheduler in this Bot-only release; never replay a
     // possibly destructive task just because an ordinary conversation resumes.
     if (record.trigger?.taskExecutionId) return
     const bot = rt.botOf(record.botId)

@@ -1,7 +1,10 @@
 // Client channel: the team view the browser renders, and the POST /api/bot endpoints.
 import { randomUUID } from 'node:crypto'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
-import { questionReply } from './parts.js'
+import { install as installBtw } from './btw.js'
+import { questionReply, viewReply } from './parts.js'
+import { defaultRelayLimit } from './groups.js'
+import { validateViewAnswer } from '../shared/views.js'
 import { COLORS, EXTRA_COLORS, ROUTE } from './constants.js'
 
 const LANGUAGES = { zh: 'Chinese (简体中文)', en: 'English' }
@@ -18,6 +21,7 @@ export function errorCode(error) {
 }
 
 export function install(rt) {
+  installBtw(rt)
   const { ctx, state } = rt
 
   // The DSH interface language of the last browser that asked for the team.
@@ -41,13 +45,17 @@ export function install(rt) {
       ...bot, sessionId: rt.chatOf(bot.id), parts: (segments ?? []).map(segment => segment.sessionId), ...(kickoff ? { waiting: true } : {}),
     })),
     // `parts`: the members' hidden group Sessions and their earlier segments, for usage.
-    rooms: Object.values(state.rooms).map(({ log, seen, lateRounds, sessions, segments, ...room }) => {
+    rooms: Object.values(state.rooms).map(({ log, seen, lateRounds, relays, sessions, segments, ...room }) => {
       const parts = [...Object.values(sessions ?? {}), ...Object.values(segments ?? {}).flat().map(segment => segment.sessionId)]
       const last = (log ?? []).filter(line => line.kind === undefined).at(-1)
-      return { ...room, parts, ...(last ? { preview: last.who === 'User' ? last.text : `${last.who}：${last.text}` } : {}) }
+      return { ...room, relayLimitDefault: defaultRelayLimit(room), parts, ...(last ? { preview: last.who === 'User' ? last.text : `${last.who}：${last.text}` } : {}) }
     }),
     exchangeTurns: state.exchangeTurns,
     questions: state.questions,
+    views: state.views ?? {},
+    // Aside answers of each Bot's current part, newest first. Not part of the
+    // model-visible history; earlier parts send their cards on their own pages.
+    btwCards: rt.btwView?.() ?? {},
     // The team's DSH Agent (at most one): plain dsh Sessions, not Bots.
     agents: Object.values(state.agents),
     // Key names and who may use them; values never leave the host.
@@ -68,7 +76,7 @@ export function install(rt) {
     readOnly: rt.readOnly() ?? null,
   })
   // What changes without a new revision, sent with every state answer. `memoryNews`:
-  // per Bot, its latest memory change; `memoryReviews`: memory reviews waiting or
+  // per Bot or group chat, its latest memory change; `memoryReviews`: memory reviews waiting or
   // running; `work`: per Bot, the turn it runs and its tool; per group, the members whose
   // turn there runs; the approvals waiting; per Bot, who it waits for to hand back work;
   // and per Session, when its running turn began.
@@ -82,7 +90,7 @@ export function install(rt) {
   })
   // What a host that only reads the team may still answer.
   // Updates change the dsh profile, not the team, so a reading host may run them too.
-  const READS = new Set(['state', 'models', 'efforts', 'providers', 'provider-models', 'earlier', 'chat', 'run-stats', 'room-progress', 'exchange', 'exchange-text', 'file-text', 'usage', 'schedules', 'memory-view', 'browser-wait', 'browser-result', 'diagnostics', 'diagnostics-log', 'diagnostics-clear', 'update-check', 'update-install', 'dsh-update-install', 'repo-stars', 'approval-answer'])
+  const READS = new Set(['state', 'models', 'efforts', 'providers', 'provider-models', 'earlier', 'chat', 'run-stats', 'room-progress', 'exchange', 'exchange-text', 'file-text', 'usage', 'schedules', 'memory-view', 'browser-wait', 'browser-result', 'diagnostics', 'diagnostics-log', 'diagnostics-clear', 'update-check', 'update-install', 'dsh-update-install', 'repo-stars', 'approval-answer', 'thinking'])
 
   function setPrefs(body) {
     if (body.theme !== undefined) {
@@ -98,6 +106,27 @@ export function install(rt) {
       if (body.motion === null || body.motion === 'normal') delete state.prefs.motion
       else if (body.motion === 'quiet' || body.motion === 'lively') state.prefs.motion = body.motion
       else throw invalid('Motion must be quiet, normal or lively')
+    }
+    if (body.layout !== undefined) {
+      if (body.layout === null || body.layout === 'bubble') delete state.prefs.layout
+      else if (body.layout === 'flat') state.prefs.layout = body.layout
+      else throw invalid('Layout must be bubble or flat')
+    }
+    if (body.width !== undefined) {
+      if (body.width === null || body.width === 80) delete state.prefs.width
+      else if (Number.isInteger(body.width) && body.width >= 50 && body.width <= 100) state.prefs.width = body.width
+      else throw invalid('Width must be a whole percent from 50 to 100')
+    }
+    if (body.flatWidth !== undefined) {
+      if (body.flatWidth === null || body.flatWidth === 100) delete state.prefs.flatWidth
+      else if (Number.isInteger(body.flatWidth) && body.flatWidth >= 50 && body.flatWidth <= 100) state.prefs.flatWidth = body.flatWidth
+      else throw invalid('Flat text width must be a whole percent from 50 to 100')
+    }
+    if (body.thinking !== undefined) {
+      // A value this version does not know is ignored, not refused: the toggle
+      // may grow more states later.
+      if (body.thinking === true) state.prefs.thinking = true
+      else if (body.thinking === false || body.thinking === null) delete state.prefs.thinking
     }
     return rt.save()
   }
@@ -121,6 +150,16 @@ export function install(rt) {
           return ok({ modelsKey: modelsKey() })
         case 'efforts':
           return ok(await rt.reasoningOf(String(body.ref ?? '')) ?? { efforts: [] })
+        // A Turn's exact thinking time, from the timed stream in its events; `ms`
+        // omitted when the stream carries no reasoning records.
+        case 'thinking': {
+          const sessionId = String(body.sessionId ?? '')
+          const turn = Number(body.turn)
+          if (!Number.isFinite(turn) || rt.selfOf(sessionId) === undefined) return ok(null)
+          await rt.load()
+          const ms = await rt.thinkingOf(sessionId, turn)
+          return ok(ms === undefined ? {} : { ms })
+        }
         // Model providers and their keys, for a window without DSH's own Models page.
         case 'providers':
           return ok(await rt.providersView())
@@ -217,14 +256,23 @@ export function install(rt) {
             remove: Array.isArray(body.remove) ? body.remove : undefined,
             workDir: body.workDir,
             permission: body.permission,
+            relayLimit: body.relayLimit,
           })
           return ok({ room: view().rooms.find(entry => entry.id === room.id), changes })
+        }
+        case 'room-continue': {
+          await rt.load()
+          await rt.continueRoom(body.roomId)
+          return ok(view())
         }
         case 'folders':
         case 'folder-pick':
         case 'folder-list':
           await rt.load()
           return ok(await rt.folderEndpoint(endpoint, body, signal))
+        case 'team-workspace':
+          await rt.load()
+          return ok({ team: await rt.setTeamWorkspace(String(body.path ?? '')) })
         case 'add-agent':
           await rt.load()
           return ok(await rt.addAgent())
@@ -262,6 +310,13 @@ export function install(rt) {
           await rt.load()
           if (rt.own(state.questions, body.sessionId) !== undefined) {
             delete state.questions[body.sessionId]
+            await rt.save()
+          }
+          return ok(true)
+        case 'dismiss-view':
+          await rt.load()
+          if (rt.own(state.views, body.sessionId) !== undefined) {
+            delete state.views[body.sessionId]
             await rt.save()
           }
           return ok(true)
@@ -316,6 +371,31 @@ export function install(rt) {
           await rt.save()
           return ok(true)
         }
+        case 'view-reply': {
+          if (typeof body.sessionId !== 'string') return fail('Nothing to send', 'bot/invalid')
+          await rt.load()
+          const past = rt.pastOwners.get(body.sessionId)
+          const sessionId = rt.botOf(body.sessionId) ? rt.chatOf(body.sessionId) : past && past.roomId === undefined ? rt.chatOf(past.botId) : body.sessionId
+          const pending = rt.own(state.views, sessionId)
+          if (pending === undefined || pending.id !== body.viewId) return fail('This view is no longer open', 'bot/stale')
+          const checked = validateViewAnswer(pending.view, body.action, body.values)
+          if (checked.error !== undefined) return fail(checked.error, 'bot/invalid')
+          const reply = viewReply(pending, body.action, body.values)
+          if (reply === undefined) return fail('Nothing to send', 'bot/invalid')
+          // Claim the view before queueing so a second answer is refused.
+          delete state.views[sessionId]
+          try {
+            await rt.ensureCapabilities(sessionId)
+            const agent = await rt.resolveAgent(sessionId)
+            agent.followup(createUserMessage({ content: [{ type: 'text', text: reply.text }], source: reply.source }))
+            await ctx.sessions.flush(agent.session)
+          } catch (error) {
+            state.views[sessionId] ??= pending
+            throw error
+          }
+          await rt.save()
+          return ok(true)
+        }
         case 'send': {
           const text = String(body.text ?? '').trim()
           if (text === '' || typeof body.sessionId !== 'string') return fail('Nothing to send', 'bot/invalid')
@@ -331,6 +411,19 @@ export function install(rt) {
             content: [{ type: 'text', text }],
           }, AbortSignal.timeout(30_000))
           return ok(true)
+        }
+        // An aside on a snapshot of this Bot's private chat. The answer is not written
+        // into the Session; the card fills in after this returns.
+        case 'btw': {
+          if (typeof body.sessionId !== 'string') return fail('Nothing to ask', 'bot/invalid')
+          if (String(body.text ?? '').trim() === '') return fail('Write a question after /btw.', 'bot/invalid')
+          await rt.load()
+          return ok(await rt.askBtw({ sessionId: body.sessionId, text: String(body.text) }))
+        }
+        case 'btw-cancel': {
+          if (typeof body.sessionId !== 'string' || typeof body.id !== 'string' || body.id === '') return fail('Nothing to cancel', 'bot/invalid')
+          await rt.load()
+          return ok(await rt.cancelBtw({ sessionId: body.sessionId, id: body.id }))
         }
         case 'update-check': {
           const fresh = body.fresh === true
@@ -387,6 +480,8 @@ export function install(rt) {
 
   ctx.effect(() => {
     void rt.load()
-    return () => {}
+    // Registered last, so this disposer runs before the state lock is released.
+    // In-flight asides abort here; their cards stay answering for the next owner.
+    return () => rt.btwDispose?.()
   }, 'ds-bot: load state')
 }

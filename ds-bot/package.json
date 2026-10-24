@@ -1,6 +1,6 @@
 {
   "name": "ds-bot",
-  "version": "0.1.7-halfsignal.13",
+  "version": "0.2.1-halfsignal.14",
   "description": "Halfsignal: a persistent Bot team for DeepSeek Harness with a native Harness interface",
   "keywords": [
     "dsh-plugin",
@@ -11,13 +11,13 @@
     "multi-agent",
     "agents"
   ],
-  "homepage": "https://github.com/Fei2411/DeepSeek-Bot#readme",
+  "homepage": "https://github.com/KouriVar/DeepSeek-Bot#readme",
   "bugs": {
-    "url": "https://github.com/Fei2411/DeepSeek-Bot/issues"
+    "url": "https://github.com/KouriVar/DeepSeek-Bot/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Fei2411/DeepSeek-Bot.git",
+    "url": "git+https://github.com/KouriVar/DeepSeek-Bot.git",
     "directory": "ds-bot"
   },
   "license": "Apache-2.0",

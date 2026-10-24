@@ -290,3 +290,18 @@ test('a written tool call is told apart from text about one', () => {
   assert.equal(writesToolCall(undefined), false)
   assert.equal(stripWrittenCalls(WRITTEN), 'Checking now.')
 })
+
+test('retired board work is not resumed or resent as an ordinary Bot conversation', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  const home = freshHome(t)
+  writeFileSync(join(home, 'inflight.json'), JSON.stringify({
+    turns: { b: { botId: 'b', since: Date.now(), trigger: { role: 'task', taskExecutionId: 'old-execution' } } },
+    queued: { a: [{ at: Date.now(), args: { toId: 'a', role: 'task', text: 'Do not execute again', taskExecutionId: 'old-queued' } }] },
+  }))
+  const host = await start(home)
+  assert.equal(host.ctx.get('botTaskRuntime'), undefined)
+  t.mock.timers.tick(3000)
+  await settle(() => Object.keys(notes(home).turns).length === 0 && Object.keys(notes(home).queued).length === 0)
+  assert.equal(host.agentOf('a').calls.length, 0)
+  assert.equal(host.agentOf('b').calls.length, 0)
+})

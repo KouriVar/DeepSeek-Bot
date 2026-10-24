@@ -1,5 +1,5 @@
 import { createElement as h, useEffect } from 'react'
-import { IconAgentPresetOutlineRegular, IconNewChatOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconAgentPresetOutlineRegular, IconNewChatOutlineRegular } from './dsh-primitives.js'
 
 // The shell owns the row, its label and the collapsed tooltip.
 export function BotPanelIcon({ size }) {

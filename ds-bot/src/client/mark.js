@@ -53,6 +53,9 @@ export function BotMark({ bot, look: given, size = 36, state = 'idle', live = fa
   const ref = useRef(null)
   const maskId = useRef('')
   if (maskId.current === '') maskId.current = `bt-mark-${nextMarkSerial()}`
+  // Failed photos fall back to the character; changing the photo retries it.
+  const [broken, setBroken] = useState('')
+  const image = look.image && look.image !== broken ? look.image : undefined
   useGaze(ref, gaze || (live && size >= 32))
   useEffect(() => {
     if (!(live || pokeable) || !ref.current) return undefined
@@ -61,7 +64,7 @@ export function BotMark({ bot, look: given, size = 36, state = 'idle', live = fa
   const common = {
     ref,
     className: 'bt-mark',
-    'data-shape': look.image ? 'image' : shapeId(look.shape),
+    'data-shape': image ? 'image' : shapeId(look.shape),
     'data-state': STATES.includes(state) ? state : 'idle',
     'data-live': live ? '' : undefined,
     'data-fidget': live ? FIDGETS[fnv1a(`${bot?.id ?? ''}:fidget`) % FIDGETS.length] : undefined,
@@ -74,7 +77,7 @@ export function BotMark({ bot, look: given, size = 36, state = 'idle', live = fa
     'aria-label': pokeable ? label ?? t('Play with this Bot') : label,
     'aria-hidden': label || pokeable ? undefined : true,
   }
-  if (look.image) return h('span', common, h('img', { className: 'bt-mark-img', src: look.image, alt: '', draggable: false }))
+  if (image) return h('span', common, h('img', { className: 'bt-mark-img', src: image, alt: '', draggable: false, onError: () => setBroken(image) }))
   const box = shapeOf(look.shape).size
   const aura = `<g class="bt-character-aura" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><g class="bt-mood-spark"><path d="M84 8L86 14L92 16L86 18L84 24L82 18L76 16L82 14Z" stroke-width="1.8"/></g><g class="bt-mood-orbit"><circle cx="10" cy="49" r="2" fill="currentColor" stroke="none"/><circle cx="90" cy="49" r="2" fill="currentColor" stroke="none"/></g><g class="bt-mood-rest" stroke-width="2.2"><path d="M76 21H83L76 28H83"/><path d="M87 9H94L87 16H94"/></g></g>`
   return h('span', common, h('svg', { viewBox: `0 0 ${box} ${box}`, dangerouslySetInnerHTML: { __html: characterMarkup(look.shape, look.color, look.face).replaceAll(MASK_ID, maskId.current) + aura } }))

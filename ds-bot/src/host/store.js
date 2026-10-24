@@ -19,7 +19,7 @@ export function install(rt) {
   const { ctx, home, statePath } = rt
 
   /** @type {{version:1, workspaceId?:string, mainBotIds:string[], bots:Record<string,any>, rooms:Record<string,any>, agents:Record<string,any>, capabilities:{items:Record<string,any>}, exchanges:any[], exchangeTurns:Record<string,number[]>, revision:number}} */
-  const state = { version: 1, mainBotIds: [], bots: {}, rooms: {}, agents: {}, capabilities: { items: {} }, exchanges: [], exchangeTurns: {}, works: {}, questions: {}, prefs: {}, switching: {}, revision: 0 }
+  const state = { version: 1, mainBotIds: [], bots: {}, rooms: {}, agents: {}, capabilities: { items: {} }, exchanges: [], exchangeTurns: {}, works: {}, questions: {}, views: {}, prefs: {}, switching: {}, revision: 0 }
   let loaded = null
   let writing = Promise.resolve()
   const { warn } = rt
@@ -160,10 +160,27 @@ export function install(rt) {
       migrated = true
     }
     if (state.works === null || typeof state.works !== 'object' || Array.isArray(state.works)) state.works = {}
+    if (state.views === null || typeof state.views !== 'object' || Array.isArray(state.views)) state.views = {}
+    // LEGACY: aside cards lived in this file only before the feature shipped;
+    // they are kept under btw/ per part now. A saved copy is dropped, not moved.
+    if ('btwCards' in state) {
+      delete state.btwCards
+      migrated = true
+    }
+    const writer = holder === undefined && stuck === undefined
     // LEGACY: Bots no longer count the rounds they start in a group.
     for (const room of Object.values(state.rooms)) {
       if (!('botRounds' in room)) continue
       delete room.botRounds
+      migrated = true
+    }
+    // LEGACY: the late-round limit went with the round caps; a group counts relays to
+    // its pause now.
+    for (const room of Object.values(state.rooms)) {
+      if (room.lateRounds === undefined && room.quietNoticed === undefined && room.quietShown === undefined) continue
+      delete room.lateRounds
+      delete room.quietNoticed
+      delete room.quietShown
       migrated = true
     }
     // Groups from before group settings existed reply in turn, led by a Main Bot member.
@@ -187,7 +204,6 @@ export function install(rt) {
     // Teams from before #206 kept every long message whole in this file, written whole on
     // every save. A message between Bots is whole in its recipient's Session; a group
     // line's whole text moves to a file of its own, which only the writing host makes.
-    const writer = holder === undefined && stuck === undefined
     for (const entry of state.exchanges) {
       if (typeof entry.text !== 'string' || entry.text.length <= TEXT_KEPT || entry.length !== undefined) continue
       entry.length = entry.text.length
