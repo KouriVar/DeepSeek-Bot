@@ -53,7 +53,8 @@ export function install(rt) {
     const place = usable ? { cwd: dir } : { workspaceId: await ensureWorkspace() }
     const { sessionId } = await ctx.sessionController.create({ ...place, ...await botPreset() })
     const agent = await rt.resolveAgent(sessionId)
-    await ctx.sessionTitle.rename(agent.session, title)
+    // 移动端靠这个前缀区分 Bot 会话（见 dsh.mobile.entries.filters.titlePrefix）。
+    await ctx.sessionTitle.rename(agent.session, `Bot · ${title}`)
     return sessionId
   }
 

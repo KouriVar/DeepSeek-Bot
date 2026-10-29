@@ -58,6 +58,20 @@
     },
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "mobile": {
+      "entries": [
+        {
+          "id": "bot",
+          "title": "Bot",
+          "icon": "person.2",
+          "order": 10,
+          "kind": "sessions",
+          "filters": {
+            "titlePrefix": "Bot · "
+          }
+        }
+      ]
     }
   },
   "devDependencies": {
