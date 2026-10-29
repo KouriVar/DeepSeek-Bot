@@ -11,6 +11,31 @@ export function install(rt) {
 
   let bootstrapping = null
 
+  // 一次性迁移：移动端按 `Bot · ` 前缀识别 Bot 会话（见 dsh.mobile.entries.filters），
+  // 该前缀是本版本才加的，之前创建的 Bot 会话需要补齐。只在首次运行，之后不再改写标题。
+  if (state.mobilePrefixMigrated !== true) {
+    void (async () => {
+      try {
+        for (const bot of Object.values(state.bots ?? {})) {
+          const sessionId = typeof bot?.id === 'string' ? bot.id : ''
+          const name = typeof bot?.name === 'string' ? bot.name.trim() : ''
+          if (sessionId === '' || name === '') continue
+          try {
+            const agent = await rt.resolveAgent(sessionId)
+            const title = `Bot · ${name}`
+            if (agent?.session !== undefined) await ctx.sessionTitle.rename(agent.session, title)
+          } catch {
+            // 会话已不存在（用户删过）：跳过即可，不阻断启动。
+          }
+        }
+        state.mobilePrefixMigrated = true
+        await rt.save()
+      } catch (error) {
+        rt.warn('ds-bot: mobile prefix migration skipped: %s', error)
+      }
+    })()
+  }
+
   // The team folder is DS Bot's own: deleted, it is made again before a Session needs it.
   async function keepTeamFolder() {
     const team = rt.teamFolder()
