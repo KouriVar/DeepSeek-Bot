@@ -68,7 +68,7 @@
           "order": 10,
           "kind": "sessions",
           "filters": {
-            "titlePrefix": "Bot · "
+            "workspaceTitle": "DS Bot"
           }
         }
       ]
