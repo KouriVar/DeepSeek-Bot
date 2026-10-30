@@ -19,11 +19,12 @@ runInNewContext(bundle.outputFiles[0].text, { module, exports: module.exports, r
 test('native process folding leaves widgets visible and other tool details folded', () => {
   const { window } = new JSDOM(`<!doctype html><style>[hidden="until-found"]{content-visibility:hidden}</style>
     <div id="widget" data-step-process hidden="until-found"><div data-step-process-body hidden="until-found"><div data-turn-process-hidden hidden="until-found"><div class="bt-view"><button>Send</button></div></div></div></div>
+    <div id="handoff" data-step-process hidden="until-found"><div data-step-process-body hidden="until-found"><div data-turn-process-hidden hidden="until-found"><div class="bt-handoff"><button>Take over</button></div></div></div></div>
     <div id="tool" data-step-process hidden="until-found"><div data-step-process-body hidden="until-found"><div data-turn-process-hidden hidden="until-found">Tool output</div></div></div>`)
   const style = window.document.createElement('style')
   style.textContent = module.exports.CONVERSATION_CSS
   window.document.head.append(style)
-  for (const element of window.document.querySelectorAll('#widget, #widget [hidden]')) {
+  for (const element of window.document.querySelectorAll('#widget, #widget [hidden], #handoff, #handoff [hidden]')) {
     assert.equal(window.getComputedStyle(element).contentVisibility, 'visible')
   }
   assert.equal(window.getComputedStyle(window.document.querySelector('#tool')).contentVisibility, 'hidden')

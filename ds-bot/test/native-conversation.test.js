@@ -14,7 +14,10 @@ const module = { exports: {} }
 runInNewContext(built.outputFiles[0].text, {
   module, exports: module.exports,
   require: name => name === 'react' ? {
-    createElement: (type, props) => ({ type, props }), useEffect: effect => effects.push(effect),
+    createContext: (value) => ({ value }), useContext: context => context.value,
+    useCallback: fn => fn, useSyncExternalStore: (_, getSnapshot) => getSnapshot(),
+    useMemo: make => make(), useId: () => 'dv-id',
+        createElement: (type, props) => ({ type, props }), useEffect: effect => effects.push(effect),
   } : {},
 })
 const { coordinationCss, BotToolView, BOT_TOOL_NAMES, NativeTurnProcess, installTurnProcess } = module.exports

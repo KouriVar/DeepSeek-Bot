@@ -8,7 +8,7 @@ name: Release
 # npm Trusted Publishing: npm trusts this workflow through GitHub's OIDC token, so the
 # repository keeps no npm token, and every version gets a provenance statement. It is set
 # up once on npmjs.com: package ds-bot → Settings → Trusted Publisher → GitHub Actions,
-# user Fei2411, repository DeepSeek-Bot, workflow release.yml, no environment.
+# user Fei2411, repository DS-Bot, workflow release.yml, no environment.
 #
 # The release tag must be v<version in ds-bot/package.json> and must point at a commit on
 # main. A version with a pre-release part (0.2.0-rc.1) goes to the npm tag "next", so that
@@ -35,6 +35,7 @@ concurrency:
 
 jobs:
   publish:
+    if: github.repository == 'Fei2411/DS-Bot'
     name: Check and publish
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -205,6 +206,11 @@ jobs:
         run: |
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
           xvfb-run -a node scripts/check-packed.mjs
+      - name: Check the files for the release
+        # The dry run never uploads, so it checks here that every file the release attaches exists.
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          ls -l "dist-pack/DeepSeek-Bot-$version-linux-x86_64.AppImage" "dist-pack/DeepSeek-Bot-$version-linux-amd64.deb" dist-pack/latest-linux.yml
       - name: Keep the packages for real-device checks
         if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
@@ -221,7 +227,44 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.event.release.tag_name }}
+        # The AppImage carries its block map inside the file, so there is no .blockmap to attach.
         run: |
           version="$(node -p "require('./package.json').version")"
-          appimage="dist-pack/DeepSeek-Bot-$version-linux-x86_64.AppImage"
-          gh release upload "$TAG" "$appimage" "$appimage.blockmap" "dist-pack/DeepSeek-Bot-$version-linux-amd64.deb" dist-pack/latest-linux.yml --clobber
+          gh release upload "$TAG" "dist-pack/DeepSeek-Bot-$version-linux-x86_64.AppImage" "dist-pack/DeepSeek-Bot-$version-linux-amd64.deb" dist-pack/latest-linux.yml --clobber
+
+  halfsignal-plugin:
+    name: Package Halfsignal plugin
+    if: github.repository == 'KouriVar/DeepSeek-Bot'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+        working-directory: ds-bot
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Check the release version
+        if: github.event_name == 'release'
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          test "$TAG" = "v$version"
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+      - run: npm ci --no-fund --no-audit
+      - run: npm run harness
+      - run: npm test -- --test-concurrency=4
+      - run: node scripts/build-client.mjs --check
+      - run: npm run lint
+      - run: npm pack
+      - name: Attach the plugin package
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$TAG" ds-bot-*.tgz --repo "$GITHUB_REPOSITORY" --clobber

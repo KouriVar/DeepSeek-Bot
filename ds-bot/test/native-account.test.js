@@ -12,7 +12,10 @@ const bundle = await build({
 const module = { exports: {} }
 runInNewContext(bundle.outputFiles[0].text, {
   module, exports: module.exports,
-  require: name => (name === 'react' ? { createElement: (type, props) => ({ type, props }), useEffect() {} } : {}),
+  require: name => (name === 'react' ? { createContext: (value) => ({ value }), useContext: context => context.value,
+    useCallback: fn => fn, useSyncExternalStore: (_, getSnapshot) => getSnapshot(),
+    useMemo: make => make(), useId: () => 'dv-id',
+    createElement: (type, props) => ({ type, props }), useEffect() {} } : {}),
 })
 const { NativeAccountLauncher, installNativeAccount } = module.exports
 

@@ -1,6 +1,6 @@
 {
   "name": "ds-bot",
-  "version": "0.2.1-halfsignal.14",
+  "version": "0.2.4-halfsignal.15",
   "description": "Halfsignal: a persistent Bot team for DeepSeek Harness with a native Harness interface",
   "keywords": [
     "dsh-plugin",
@@ -33,7 +33,9 @@
     "index.js",
     "src/host/",
     "src/shared/",
+    "src/office/",
     "client.js",
+    "office.js",
     "web-search.js",
     "cordis.patch.yml",
     "README.md",
@@ -75,6 +77,10 @@
     }
   },
   "devDependencies": {
+    "@xmldom/xmldom": "0.9.12",
     "esbuild": "0.28.2"
+  },
+  "dependencies": {
+    "deep-view": "0.1.0"
   }
 }

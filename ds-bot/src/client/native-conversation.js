@@ -4,7 +4,7 @@ import { t } from './i18n.js'
 import { ToolCell } from './cells.js'
 import { freePriority } from './surface.js'
 
-export const BOT_TOOL_NAMES = ['message_bot', 'stop_bot', 'create_bot', 'update_bot', 'group_relay', 'create_group', 'update_group', 'delete_group', 'post_to_group', 'ask_user', 'request_secret', 'ask_user_question', 'read_group_chat', 'remember', 'forget', 'show_view']
+export const BOT_TOOL_NAMES = ['message_bot', 'stop_bot', 'create_bot', 'update_bot', 'group_relay', 'create_group', 'update_group', 'delete_group', 'post_to_group', 'ask_user', 'request_secret', 'ask_user_question', 'read_group_chat', 'remember', 'forget', 'show_view', 'browser_handoff']
 
 export function BotToolView(props) {
   return h(ToolCell, { ...props, node: { data: { root: props.block } } })

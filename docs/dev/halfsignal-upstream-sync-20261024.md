@@ -5,7 +5,7 @@
 Merge released upstream `main` at `1bebe826f74e9a72cabafd3b80602b05af867b38`
 (DS Bot v0.2.1) into Halfsignal `b308239`. Unreleased upstream `dev` is not included.
 Custom package version: `0.2.1-halfsignal.14`. Verified host: DSH `0.2.1-rc.2`.
-The pre-merge source is retained at `backup/halfsignal-before-upstream-20261024`.
+The pre-merge source is retained in Git history at `b308239`.
 
 The user chose Bot-only functionality, upstream functional additions, and existing
 Halfsignal UI/interaction wherever both implementations overlap.

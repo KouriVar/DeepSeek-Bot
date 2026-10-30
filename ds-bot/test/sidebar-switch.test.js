@@ -25,6 +25,8 @@ let renderRefs
 let refIndex = 0
 let layoutEffects
 const react = {
+  createContext: value => ({ value }), useContext: context => context.value,
+  useCallback: fn => fn, useSyncExternalStore: (_, getSnapshot) => getSnapshot(),
   createElement: (type, props, ...children) => ({ type, props: { ...props, children } }), Fragment: Symbol('Fragment'),
   useEffect() {}, useLayoutEffect: effect => layoutEffects?.push(effect), useState: initial => [initial, () => {}],
   useMemo: make => make(), useRef: current => renderRefs ? renderRefs[refIndex++] ??= { current } : { current }, useId: () => 'id',
