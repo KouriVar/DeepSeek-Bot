@@ -10,6 +10,7 @@ import { reducedMotion } from './activity-row.js'
 import { Shimmer, workPhrase } from './cells.js'
 import { springEasing, SPRING_SHAPE, useViewport, viewBottom } from './motion.js'
 import { hostText, t } from './i18n.js'
+import { clientErrors } from './diagnostics.js'
 import { showsDshRow } from './dsh-offer.js'
 
 // -------------------------------------------------------------------------
@@ -98,13 +99,15 @@ function BotRow({ bot, roster, actions, useSessions, useSessionStatus, useSessio
 
 function RoomRow({ room, roster, actions, useSessions, useSessionStatus, useSessionRetainInfo, useWork, wide, marked }) {
   const id = room.id
-  const fallback = useSessions(list => previewOf(list, id))
+  // The group's own Session is a chain of parts; the row shows the current one.
+  const sessionId = room.sessionId ?? id
+  const fallback = useSessions(list => previewOf(list, sessionId))
   const preview = room.preview?.replace(/\s+/g, ' ').trim() || fallback
-  const active = useSessionRetainInfo(id, info => (info?.retainedBy?.mainView ?? 0) > 0)
-  const unread = useSessionStatus(map => map.get(id)?.completionUnread === true) || (marked && !active)
+  const active = useSessionRetainInfo(sessionId, info => (info?.retainedBy?.mainView ?? 0) > 0)
+  const unread = useSessionStatus(map => map.get(sessionId)?.completionUnread === true) || (marked && !active)
   useMarkedUnread(id, active, marked, actions)
   const approval = useApproval(useWork, entry => entry.roomId === id)
-  const members = workKeys(useGroupWork(useWork, rooms => (rooms[id] ?? []).map(entry => ({ id: entry.botId, ...doingOf(entry) }))))
+  const members = workKeys(useGroupWork(useWork, rooms => (rooms[id] ?? []).filter(entry => entry.botId !== undefined).map(entry => ({ id: entry.botId, ...doingOf(entry) }))))
   const first = roster.byId[members[0]?.id]
   const workingLine = first ? workLine(first.name, members[0], members.length - 1) : null
   if (room.hidden && !active) return null
@@ -250,6 +253,17 @@ function useListGlide(listRef, layout, key) {
   }, [layout, key])
 }
 
+// The Bot-API-down hint cannot send the user to Settings → Feedback: its
+// diagnostics request needs the same API. What still works in this state is
+// the last error this window recorded, and the engine's own startup output —
+// its console, or the app's startup error box (#516).
+const bootHint = () => {
+  const last = clientErrors().at(-1)?.text
+  return last === undefined
+    ? t('The Bot team could not start. The engine’s startup output — its console, or the app’s startup error box — has the cause.')
+    : t('The Bot team could not start. {error}. The engine’s startup output — its console, or the app’s startup error box — has the cause.', { error: last })
+}
+
 export function TeamSidebar(props) {
   const { wide, expandSidebar, useRoster, useUi, useSessions, actions } = props
   const listRef = useRef(null)
@@ -257,6 +271,7 @@ export function TeamSidebar(props) {
   useLayoutEffect(() => { closing.current = false })
   const roster = useRoster(value => value)
   const markedUnread = useUi(value => value.unread)
+  const bootFailed = useUi(value => value.bootFailed)
   props.useRegistry(value => value)
   const updated = useSessions(list => {
     const stamps = {}
@@ -321,7 +336,7 @@ export function TeamSidebar(props) {
           h('button', { type: 'button', className: 'bt-round', 'aria-label': t('New…'), title: t('New…'), onClick: () => actions.openNewChat('new') }, h(PlusIcon))),
     wide && roster.readOnly ? h('div', { className: 'bt-hint bt-read-only', role: 'status' }, hostText(roster.readOnly)) : null,
     h('div', { ref: listRef, className: 'bt-list', role: 'region', 'aria-label': t('Bot list') },
-      main ? h(BotRow, { ...rowProps, bot: main, marked: markedUnread[main.id] === true }) : roster.ready ? null : h('div', { className: 'bt-hint' }, t('Setting up your Main Bot…')),
+      main ? h(BotRow, { ...rowProps, bot: main, marked: markedUnread[main.id] === true }) : roster.ready ? null : h('div', { className: 'bt-hint' }, bootFailed ? bootHint() : t('Setting up your Main Bot…')),
       order.map(entry => (entry.kind === 'bot'
         ? h(BotRow, { key: entry.item.id, ...rowProps, bot: entry.item, marked: markedUnread[entry.item.id] === true })
         : entry.kind === 'room'
@@ -640,6 +655,14 @@ function useLandOnMainBot(roster, useSessions, actions) {
       nativeSession.current = null
       lastBot.current = { botId: bot.id, sessionId: id }
       if (currentPart(bot) !== id) actions.landOn(bot.id)
+      return undefined
+    }
+    // The group's own Session moves on like a Bot's chat does: the part it archived
+    // is cleared, and the view goes on in the fresh one.
+    const room = id === '' ? undefined : roster.roomsById[id]
+    if (room !== undefined) {
+      lastBot.current = null
+      if ((room.sessionId ?? room.id) !== id) actions.openSession(room.id)
       return undefined
     }
     // A DSH Agent Session, blank or not, is a real destination: it stays.

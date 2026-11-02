@@ -1,6 +1,6 @@
 {
   "name": "ds-bot",
-  "version": "0.2.4-halfsignal.15",
+  "version": "0.2.6-halfsignal.16",
   "description": "Halfsignal: a persistent Bot team for DeepSeek Harness with a native Harness interface",
   "keywords": [
     "dsh-plugin",
@@ -51,6 +51,7 @@
   "peerDependencies": {
     "@deepseek-ai/cordis": "*",
     "@deepseek-ai/dsh-llm": "*",
+    "@deepseek-ai/dsh-scope": "*",
     "@deepseek-ai/dsh-tools": "*",
     "@deepseek-ai/dsh-web": "*"
   },

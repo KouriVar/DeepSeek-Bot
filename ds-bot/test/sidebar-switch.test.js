@@ -33,11 +33,12 @@ const react = {
 }
 const module = { exports: {} }
 const viewport = { innerWidth: 1280 }
-runInNewContext(outputFiles[0].text, {
+const sandbox = {
   module, exports: module.exports,
   require: name => (name === 'react' ? react : {}),
   window: viewport,
-})
+}
+runInNewContext(outputFiles[0].text, sandbox)
 const { SHELL_CSS, SIDEBAR_CSS, TeamSidebar } = module.exports
 
 function navigationSidebar(wide, { shell = true } = {}) {
