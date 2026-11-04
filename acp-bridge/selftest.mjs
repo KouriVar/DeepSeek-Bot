@@ -175,7 +175,7 @@ if (!config.loginFile) {
   process.exit(2)
 }
 const cookie = await readCookie(config.loginFile)
-const client = makeClient({ url: config.url, cookie })
+const client = makeClient({ url: config.url, cookie, reauthenticate: () => readCookie(config.loginFile) })
 const state = await client.call('state', {})
 const bots = state?.bots ?? []
 if (bots.length === 0) {
@@ -188,6 +188,22 @@ if (!bot) {
   process.exit(1)
 }
 ok(`用 Bot「${bot.name}」`, bot.id)
+
+// A dsh restart mints a new launch token; the bridge must recover from a stale cookie by
+// reading DSBOT_LOGIN_FILE again instead of failing the turn.
+console.log('\n[2.5/3] cookie 失效时自动重读登录文件')
+const stale = makeClient({
+  url: config.url,
+  cookie: 'dsh-session=stale-cookie-from-a-previous-process',
+  reauthenticate: () => readCookie(config.loginFile),
+})
+try {
+  await stale.call('state', {})
+  ok('401 后重读登录文件并恢复')
+} catch (error) {
+  bad('401 后重读登录文件', error.message)
+}
+stale.close()
 
 console.log('\n[3/3] ACP 一轮')
 const child = spawn(process.execPath, [BRIDGE, '--bot', bot.id], {

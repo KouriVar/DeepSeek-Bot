@@ -136,19 +136,36 @@ prompt 里塞 `<memory_update>`、`<bot-profile>`、末尾的 `<agent_profile_up
 - Bot 的 id 与 codync 的 sessionId 是固定映射，`session/load` 不重放历史。
 - DSH 会给 Bot 的**第一条**用户消息后面接一段运行时上下文（工作目录等），这是 dsh 自己的行为，
   桥不剥它。
-- 桥依赖 dsh 的 `POST /api/bot` 与 `GET /api/bot/feed`。dsh 重启后登录地址会换，桥会以
-  “DS Bot 拒绝了这个 cookie（HTTP 401）”结束这一轮，需要更新 `DSBOT_LOGIN_FILE` 并重启 Bot 进程。
+- 桥依赖 dsh 的 `POST /api/bot` 与 `GET /api/bot/feed`。dsh 重启后 launch token 会换：桥收到
+  HTTP 401 时会**重读一次** `DSBOT_LOGIN_FILE` 并重登再试；仍然 401 才把错误当一段文字回给 codync。
 - DS Bot 团队同一 `DSH_HOME` 只有一个 dsh 是写入者（`bot/state.lock`）。桥只是个 HTTP 客户端，
   自己不是写入者，所以连只读的那一个也能收发，但下指令会被拒（`bot/read-only`）。
 
-## 接真实团队（本轮**没有**执行）
+## 接真实团队（方案 ①：由网关把登录地址写成文件）
 
 真实团队的 dsh 是 DSH Desktop 里的 host 子进程，登录地址**不落盘**（`authenticatedUrl` 经 IPC
-直接交给 Electron）。要接真团队，先决定凭证怎么拿，三种：
+直接交给 Electron）。选定方案是让**网关插件**把它写进一个 0600 文件——用的是 dsh 公开的
+`ctx.connection.authenticatedUrl()`，不 patch dsh、不改 ds-bot、不改 codync。
 
-1. 让 dsh 在启动时把登录地址写进一个 600 的文件（改 dsh 或加启动参数）；
-2. 从 Electron 的 cookie 库取（需要 Keychain 授权）；
-3. 让 dsh 以独立 profile 常驻（`alwayson` 之类），它自己的 stdout 里有登录地址。
+网关侧（`dsh-plugin-mobile-gateway` ≥ 0.11.2）在启动时写、退出时删，默认关闭：
 
-选定之后：把地址写进 `DSBOT_LOGIN_FILE`，`DSBOT_URL` 指向那个 dsh，`--bot` 指向真实团队里的
-某个 Bot，再照上面的“在 codync 里挂上”建 Bot。
+```yaml
+# ~/.dsh/profiles/desktop/cordis.patch.yml
+- id: mobile-gateway
+  config:
+    loginFile: /Users/you/.dsh/dsh-login.txt
+```
+
+接真团队的顺序：
+
+1. 打开上面的 `loginFile`（改配置，需要重启 DSH Desktop 才生效）。
+2. 核对文件：`ls -l ~/.dsh/dsh-login.txt` 应为 `-rw-------`；**不要 `cat`**。
+3. `~/.dsbot-bridge.env` 指向真实实例：
+
+   ```sh
+   DSBOT_URL=http://127.0.0.1:59515
+   DSBOT_LOGIN_FILE=/Users/you/.dsh/dsh-login.txt
+   ```
+
+4. 先只跑自测（`selftest.mjs`，只 `state` + 一句到目标 Bot），确认不再 401。
+5. 再把 codync 里那个测试 Bot 的 `--bot` 换成真实团队里的 Bot，或另建一个 Bot。

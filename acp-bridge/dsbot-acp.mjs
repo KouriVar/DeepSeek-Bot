@@ -84,19 +84,37 @@ export async function readCookie(loginFile, { debug = false } = {}) {
 
 // ---------------------------------------------------------------- DS Bot client
 
-export function makeClient({ url, cookie, debug = false, pollMs = DEFAULT_POLL_MS }) {
-  const call = async (endpoint, payload = {}, signal) => {
-    let response
+export function makeClient({ url, cookie, reauthenticate, debug = false, pollMs = DEFAULT_POLL_MS }) {
+  let cookieValue = cookie
+
+  // A dsh restart mints a new launch token, so the cookie can go stale while the bridge
+  // (and the codync Bot it belongs to) keeps running. One re-read of the login file
+  // recovers the turn instead of failing it.
+  const refresh = async () => {
+    if (typeof reauthenticate !== 'function') return false
+    cookieValue = await reauthenticate()
+    if (debug) log('cookie refreshed from DSBOT_LOGIN_FILE')
+    return true
+  }
+
+  const post = async (endpoint, payload, signal) => {
     try {
-      response = await fetch(`${url}/api/bot`, {
+      return await fetch(`${url}/api/bot`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json', cookie },
+        headers: { 'content-type': 'application/json', cookie: cookieValue },
         body: JSON.stringify({ endpoint, payload }),
         signal,
       })
     } catch (error) {
       if (error.name === 'AbortError') throw error
       throw new Error(`DS Bot 没在运行（测试环境）：连不上 ${url}（${error.message}）`)
+    }
+  }
+
+  const call = async (endpoint, payload = {}, signal) => {
+    let response = await post(endpoint, payload, signal)
+    if (response.status === 401 && (await refresh().catch(() => false))) {
+      response = await post(endpoint, payload, signal)
     }
     if (response.status === 401) throw new Error(`DS Bot 拒绝了这个 cookie（HTTP 401），请重新取一次登录地址：${url}`)
     if (!response.ok) throw new Error(`DS Bot 返回 HTTP ${response.status}（${url}）`)
@@ -122,8 +140,12 @@ export function makeClient({ url, cookie, debug = false, pollMs = DEFAULT_POLL_M
     running = (async () => {
       try {
         const response = await fetch(`${url}/api/bot/feed`, {
-          headers: { accept: 'text/event-stream', cookie },
+          headers: { accept: 'text/event-stream', cookie: cookieValue },
         })
+        if (response.status === 401) {
+          await refresh().catch(() => false)
+          throw new Error('feed HTTP 401')
+        }
         if (!response.ok || !response.body) throw new Error(`feed HTTP ${response.status}`)
         const decoder = new TextDecoder()
         let buffer = ''
@@ -417,7 +439,13 @@ async function main() {
   if (!config.botArg) throw new Error('--bot <bot id or name> is required')
 
   const cookie = await readCookie(config.loginFile, { debug: config.debug })
-  const client = makeClient({ url: config.url, cookie, debug: config.debug, pollMs: config.pollMs })
+  const client = makeClient({
+    url: config.url,
+    cookie,
+    reauthenticate: () => readCookie(config.loginFile, { debug: config.debug }),
+    debug: config.debug,
+    pollMs: config.pollMs,
+  })
   const bot = await findBot(client, config.botArg)
   const relay = new Relay({
     client,
